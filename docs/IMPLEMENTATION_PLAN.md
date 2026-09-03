@@ -197,7 +197,7 @@ This gives a demonstrable end-to-end flow before cart, payment, AI, and analytic
 
 ## 10. Current implementation status
 
-Milestone 1 is code-complete and awaits a project Neon connection string for runtime verification. The following identity foundation is implemented:
+Milestone 1 is code-complete and connected to the project Neon database. The following identity foundation is implemented:
 
 - Neon/Drizzle schema and initial SQL migration for users, vendor profiles, and sessions.
 - Customer and vendor registration with atomic vendor-profile creation.
@@ -230,4 +230,21 @@ The first Milestone 3 slice is implemented:
 - Server-calculated line totals, subtotal, availability state, and checkout eligibility.
 - Add-to-cart controls on product details and a protected cart page with quantity and removal actions.
 
-The next slice adds customer addresses and the simulated multi-vendor checkout transaction.
+The simulated checkout slice is implemented:
+
+- Customer-owned delivery addresses with immutable address snapshots on orders.
+- Idempotent simulated checkout with a fixed LKR 350 academic delivery fee.
+- Serializable, stock-guarded Neon transaction that prevents overselling and rolls back conflicts.
+- One checkout split into independent vendor orders with immutable line-item snapshots.
+- Successful simulated payment, initial order-history records, cart clearing, and confirmation.
+- Customer checkout page and protected order-history workspace.
+
+The vendor fulfilment and tracking slice is implemented:
+
+- Approved vendors see only their own child orders with item and delivery snapshots.
+- Server-enforced status transitions reject skipped, reversed, terminal, or stale updates.
+- Vendor status changes and cancellation notes are written to the audit timeline atomically.
+- Customers can open an order and track each vendor shipment independently.
+- Focused transition tests cover the happy path and cancellation validation.
+
+The next slice adds customer wishlists and notifications, followed by reviews and complaint workflows.

@@ -6,8 +6,10 @@ import { AppError } from './errors/app-error.ts';
 import { adminRouter } from './routes/admin.routes.ts';
 import { authRouter } from './routes/auth.routes.ts';
 import { cartRouter } from './routes/cart.routes.ts';
+import { customerCommerceRouter } from './routes/customer-commerce.routes.ts';
 import { catalogRouter } from './routes/catalog.routes.ts';
 import { vendorCatalogRouter } from './routes/vendor-catalog.routes.ts';
+import { vendorOrdersRouter } from './routes/vendor-orders.routes.ts';
 
 export const app = express();
 
@@ -44,8 +46,10 @@ app.get('/api/v1', (_request, response) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/cart', cartRouter);
+app.use('/api/v1', customerCommerceRouter);
 app.use('/api/v1', catalogRouter);
 app.use('/api/v1/vendor', vendorCatalogRouter);
+app.use('/api/v1/vendor', vendorOrdersRouter);
 
 app.use((request, response) => {
   response.status(404).json({

@@ -5,16 +5,11 @@ import { env } from '../config/env.ts';
 import { AppError } from '../errors/app-error.ts';
 import * as schema from './schema.ts';
 
-const createDatabase = (databaseUrl: string) => {
-  const sql = neon(databaseUrl);
-  return drizzle({ client: sql, schema });
-};
+type SqlClient = ReturnType<typeof neon>;
 
-type Database = ReturnType<typeof createDatabase>;
+let sqlClient: SqlClient | undefined;
 
-let database: Database | undefined;
-
-export const getDb = (): Database => {
+export const getSqlClient = (): SqlClient => {
   if (!env.DATABASE_URL) {
     throw new AppError(
       'Database access is not configured on this server.',
@@ -23,6 +18,17 @@ export const getDb = (): Database => {
     );
   }
 
-  database ??= createDatabase(env.DATABASE_URL);
+  sqlClient ??= neon(env.DATABASE_URL);
+  return sqlClient;
+};
+
+const createDatabase = () => drizzle({ client: getSqlClient(), schema });
+
+type Database = ReturnType<typeof createDatabase>;
+
+let database: Database | undefined;
+
+export const getDb = (): Database => {
+  database ??= createDatabase();
   return database;
 };

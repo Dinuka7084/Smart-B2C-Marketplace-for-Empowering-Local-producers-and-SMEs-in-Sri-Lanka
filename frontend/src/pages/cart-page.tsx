@@ -119,7 +119,7 @@ export function CartPage() {
               <dl className="mt-6 grid gap-4 border-b pb-5 text-sm"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Items</dt><dd>{cart.itemCount}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Delivery</dt><dd>Calculated at checkout</dd></div></dl>
               <div className="mt-5 flex items-baseline justify-between gap-4"><span className="font-bold">Subtotal</span><strong className="text-2xl text-primary">{formatPrice(cart.subtotalCents, cart.currency)}</strong></div>
               {cart.canCheckout && <p className="mt-4 flex items-center gap-2 text-sm text-primary"><PackageCheck className="size-4" /> Stock checked and available</p>}
-              <Button className="mt-6 w-full" size="lg" disabled>Simulated checkout comes next</Button>
+              {cart.canCheckout ? <Button className="mt-6 w-full" size="lg" render={<Link to="/checkout" />}>Continue to checkout</Button> : <Button className="mt-6 w-full" size="lg" disabled>Resolve stock issues to continue</Button>}
             </aside>
           </div>
         )}

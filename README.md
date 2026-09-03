@@ -48,6 +48,10 @@ Product images use signed direct uploads to Cloudinary. Configure the three `CLO
 
 Authenticated customers have a persistent, stock-aware cart at `/cart`. Cart API rules are documented in `docs/CART_API.md`.
 
+The academic checkout at `/checkout` saves delivery addresses, simulates a successful payment, atomically reduces Neon inventory, and splits a checkout into vendor orders. The flow is documented in `docs/CHECKOUT_API.md`.
+
+Approved vendors fulfil their child orders at `/vendor/orders`; customers can open `/account/orders/:orderId` to follow each vendor's audited tracking timeline.
+
 Authentication uses an HTTP-only session cookie. The usable token is never stored in the database; Neon stores an HMAC digest and expiry instead.
 
 ## Validation

@@ -4,6 +4,7 @@ import App from './App';
 import { ProtectedRoute } from './auth/protected-route';
 import { AuthPage } from './pages/auth-page';
 import { CartPage } from './pages/cart-page';
+import { CheckoutPage } from './pages/checkout-page';
 import { DashboardPage } from './pages/dashboard-page';
 import { NotFoundPage } from './pages/not-found-page';
 import { ProductDetailPage } from './pages/product-detail-page';
@@ -26,10 +27,34 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/checkout"
+        element={
+          <ProtectedRoute roles={['customer']}>
+            <CheckoutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/account"
         element={
           <ProtectedRoute roles={['customer']}>
             <DashboardPage workspace="customer" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/account/orders"
+        element={
+          <ProtectedRoute roles={['customer']}>
+            <DashboardPage workspace="customer" view="orders" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/account/orders/:orderId"
+        element={
+          <ProtectedRoute roles={['customer']}>
+            <DashboardPage workspace="customer" view="order-detail" />
           </ProtectedRoute>
         }
       />
@@ -46,6 +71,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={['vendor']}>
             <DashboardPage workspace="vendor" view="products" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vendor/orders"
+        element={
+          <ProtectedRoute roles={['vendor']}>
+            <DashboardPage workspace="vendor" view="orders" />
           </ProtectedRoute>
         }
       />

@@ -41,6 +41,9 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { apiRequest, type UserRole } from '@/lib/api';
+import { CustomerOrderDetailView } from '@/pages/customer-order-detail';
+import { CustomerOrdersView } from '@/pages/customer-orders';
+import { VendorOrdersView } from '@/pages/vendor-orders';
 import { VendorProductsView } from '@/pages/vendor-products';
 
 type NavItem = {
@@ -58,7 +61,7 @@ const roleConfig: Record<
     eyebrow: 'Customer',
     items: [
       { label: 'Overview', icon: Home, path: '/account' },
-      { label: 'Orders', icon: ShoppingBag },
+      { label: 'Orders', icon: ShoppingBag, path: '/account/orders' },
       { label: 'Wishlist', icon: Heart },
     ],
   },
@@ -69,7 +72,7 @@ const roleConfig: Record<
       { label: 'Overview', icon: Home, path: '/vendor' },
       { label: 'Products', icon: Store, path: '/vendor/products' },
       { label: 'Inventory', icon: Boxes },
-      { label: 'Orders', icon: PackageCheck },
+      { label: 'Orders', icon: PackageCheck, path: '/vendor/orders' },
       { label: 'Analytics', icon: BarChart3 },
     ],
   },
@@ -123,7 +126,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
                     <SidebarMenuItem key={item.label}>
                       <SidebarMenuButton
                         tooltip={item.path ? item.label : `${item.label} · coming next`}
-                        isActive={item.path === location.pathname}
+                        isActive={Boolean(item.path && (item.path === location.pathname || (item.path.split('/').length > 2 && location.pathname.startsWith(`${item.path}/`))))}
                         disabled={!item.path}
                         onClick={() => {
                           if (item.path) void navigate(item.path);
@@ -483,12 +486,15 @@ function AdminOverview() {
   );
 }
 
-export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' }) {
+export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'orders' | 'order-detail' }) {
   return (
     <DashboardShell>
-      {workspace === 'customer' && <CustomerOverview />}
+      {workspace === 'customer' && view === 'overview' && <CustomerOverview />}
+      {workspace === 'customer' && view === 'orders' && <CustomerOrdersView />}
+      {workspace === 'customer' && view === 'order-detail' && <CustomerOrderDetailView />}
       {workspace === 'vendor' && view === 'overview' && <VendorOverview />}
       {workspace === 'vendor' && view === 'products' && <VendorProductsView />}
+      {workspace === 'vendor' && view === 'orders' && <VendorOrdersView />}
       {workspace === 'admin' && <AdminOverview />}
     </DashboardShell>
   );
