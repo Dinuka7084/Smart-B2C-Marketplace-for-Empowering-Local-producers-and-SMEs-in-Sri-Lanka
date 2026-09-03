@@ -17,6 +17,8 @@ import {
   categories,
   inventory,
   products,
+  reviews,
+  users,
   vendorProfiles,
 } from '../db/schema.ts';
 import { AppError } from '../errors/app-error.ts';
@@ -180,4 +182,35 @@ catalogRouter.get('/products/:slug', async (request, response) => {
   }
 
   response.json({ product });
+});
+
+catalogRouter.get('/products/:slug/reviews', async (request, response) => {
+  const slug = z.string().trim().min(3).max(200).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).safeParse(request.params.slug);
+  if (!slug.success) throw new AppError('Product URL is invalid.', 400, 'INVALID_PRODUCT_SLUG');
+  const db = getDb();
+  const [product] = await db
+    .select({ id: products.id })
+    .from(products)
+    .innerJoin(vendorProfiles, eq(vendorProfiles.id, products.vendorId))
+    .innerJoin(categories, eq(categories.id, products.categoryId))
+    .where(and(eq(products.slug, slug.data), eq(products.status, 'published'), eq(vendorProfiles.approvalStatus, 'approved'), eq(categories.isActive, true)))
+    .limit(1);
+  if (!product) throw new AppError('Product was not found.', 404, 'PRODUCT_NOT_FOUND');
+  const records = await db
+    .select({
+      id: reviews.id,
+      rating: reviews.rating,
+      comment: reviews.comment,
+      createdAt: reviews.createdAt,
+      customerFirstName: users.firstName,
+      customerLastName: users.lastName,
+    })
+    .from(reviews)
+    .innerJoin(users, eq(users.id, reviews.customerId))
+    .where(and(eq(reviews.productId, product.id), eq(reviews.status, 'published')))
+    .orderBy(desc(reviews.createdAt));
+  const averageRating = records.length === 0
+    ? null
+    : records.reduce((total, review) => total + review.rating, 0) / records.length;
+  response.json({ reviews: records, summary: { count: records.length, averageRating } });
 });

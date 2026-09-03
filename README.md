@@ -54,6 +54,8 @@ Approved vendors fulfil their child orders at `/vendor/orders`; customers can op
 
 Customers can save products at `/account/wishlist` and review order activity at `/account/notifications`. API ownership and event rules are documented in `docs/ENGAGEMENT_API.md`.
 
+Delivered purchases can be reviewed from product pages, while order complaints live at `/account/complaints`. Administrators moderate both workflows at `/admin/support`; rules are documented in `docs/SUPPORT_API.md`.
+
 Authentication uses an HTTP-only session cookie. The usable token is never stored in the database; Neon stores an HMAC digest and expiry instead.
 
 ## Validation

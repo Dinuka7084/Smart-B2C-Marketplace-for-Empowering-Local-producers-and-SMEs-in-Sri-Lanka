@@ -41,6 +41,18 @@ export const paymentStatus = pgEnum('payment_status', ['paid', 'refunded']);
 export const notificationType = pgEnum('notification_type', [
   'order_confirmed',
   'order_status',
+  'complaint_update',
+]);
+export const reviewStatus = pgEnum('review_status', [
+  'pending',
+  'published',
+  'rejected',
+]);
+export const complaintStatus = pgEnum('complaint_status', [
+  'open',
+  'in_review',
+  'resolved',
+  'dismissed',
 ]);
 
 export const users = pgTable(
@@ -460,6 +472,71 @@ export const notifications = pgTable(
   (table) => [
     index('notifications_user_id_created_at_idx').on(table.userId, table.createdAt),
     index('notifications_user_id_is_read_idx').on(table.userId, table.isRead),
+  ],
+);
+
+export const reviews = pgTable(
+  'reviews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    customerId: uuid('customer_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    orderItemId: uuid('order_item_id')
+      .notNull()
+      .references(() => orderItems.id, { onDelete: 'restrict' }),
+    rating: integer('rating').notNull(),
+    comment: text('comment').notNull(),
+    status: reviewStatus('status').notNull().default('pending'),
+    moderatedBy: uuid('moderated_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    moderatedAt: timestamp('moderated_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('reviews_customer_product_unique').on(table.customerId, table.productId),
+    uniqueIndex('reviews_order_item_unique').on(table.orderItemId),
+    index('reviews_product_status_idx').on(table.productId, table.status),
+    check('reviews_rating_range', sql`${table.rating} >= 1 AND ${table.rating} <= 5`),
+  ],
+);
+
+export const complaints = pgTable(
+  'complaints',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    customerId: uuid('customer_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    checkoutOrderId: uuid('checkout_order_id')
+      .notNull()
+      .references(() => checkoutOrders.id, { onDelete: 'restrict' }),
+    subject: varchar('subject', { length: 160 }).notNull(),
+    description: text('description').notNull(),
+    status: complaintStatus('status').notNull().default('open'),
+    resolutionNote: text('resolution_note'),
+    handledBy: uuid('handled_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('complaints_customer_id_idx').on(table.customerId),
+    index('complaints_status_created_at_idx').on(table.status, table.createdAt),
   ],
 );
 

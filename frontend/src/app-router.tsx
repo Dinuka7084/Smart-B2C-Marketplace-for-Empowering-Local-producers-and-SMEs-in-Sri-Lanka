@@ -75,6 +75,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/account/complaints"
+        element={
+          <ProtectedRoute roles={['customer']}>
+            <DashboardPage workspace="customer" view="complaints" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/vendor"
         element={
           <ProtectedRoute roles={['vendor']}>
@@ -103,6 +111,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={['admin']}>
             <DashboardPage workspace="admin" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/support"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <DashboardPage workspace="admin" view="support" />
           </ProtectedRoute>
         }
       />

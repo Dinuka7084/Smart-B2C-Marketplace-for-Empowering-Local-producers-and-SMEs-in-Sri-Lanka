@@ -10,6 +10,7 @@ import {
   Home,
   Leaf,
   LogOut,
+  MessageSquareWarning,
   PackageCheck,
   ShieldCheck,
   ShoppingBag,
@@ -42,6 +43,8 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { apiRequest, type UserRole } from '@/lib/api';
+import { AdminSupportView } from '@/pages/admin-support';
+import { CustomerComplaintsView } from '@/pages/customer-complaints';
 import { CustomerOrderDetailView } from '@/pages/customer-order-detail';
 import { CustomerNotificationsView } from '@/pages/customer-notifications';
 import { CustomerOrdersView } from '@/pages/customer-orders';
@@ -67,6 +70,7 @@ const roleConfig: Record<
       { label: 'Orders', icon: ShoppingBag, path: '/account/orders' },
       { label: 'Wishlist', icon: Heart, path: '/account/wishlist' },
       { label: 'Notifications', icon: Bell, path: '/account/notifications' },
+      { label: 'Complaints', icon: MessageSquareWarning, path: '/account/complaints' },
     ],
   },
   vendor: {
@@ -86,6 +90,7 @@ const roleConfig: Record<
     items: [
       { label: 'Overview', icon: Home, path: '/admin' },
       { label: 'Vendors', icon: Store },
+      { label: 'Moderation', icon: MessageSquareWarning, path: '/admin/support' },
       { label: 'Users', icon: Users },
       { label: 'Platform reports', icon: BarChart3 },
     ],
@@ -490,7 +495,7 @@ function AdminOverview() {
   );
 }
 
-export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'orders' | 'order-detail' | 'wishlist' | 'notifications' }) {
+export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'orders' | 'order-detail' | 'wishlist' | 'notifications' | 'complaints' | 'support' }) {
   return (
     <DashboardShell>
       {workspace === 'customer' && view === 'overview' && <CustomerOverview />}
@@ -498,10 +503,12 @@ export function DashboardPage({ workspace, view = 'overview' }: { workspace: Use
       {workspace === 'customer' && view === 'order-detail' && <CustomerOrderDetailView />}
       {workspace === 'customer' && view === 'wishlist' && <CustomerWishlistView />}
       {workspace === 'customer' && view === 'notifications' && <CustomerNotificationsView />}
+      {workspace === 'customer' && view === 'complaints' && <CustomerComplaintsView />}
       {workspace === 'vendor' && view === 'overview' && <VendorOverview />}
       {workspace === 'vendor' && view === 'products' && <VendorProductsView />}
       {workspace === 'vendor' && view === 'orders' && <VendorOrdersView />}
-      {workspace === 'admin' && <AdminOverview />}
+      {workspace === 'admin' && view === 'overview' && <AdminOverview />}
+      {workspace === 'admin' && view === 'support' && <AdminSupportView />}
     </DashboardShell>
   );
 }

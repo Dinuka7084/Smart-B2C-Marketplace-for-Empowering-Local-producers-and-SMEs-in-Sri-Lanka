@@ -254,4 +254,13 @@ The customer engagement slice is implemented:
 - Persistent checkout and fulfilment notifications with read and mark-all-read actions.
 - Order notifications and their matching business events are created in the same transaction.
 
-The next slice adds verified-purchase reviews and the customer complaint workflow.
+The trust and support slice is implemented:
+
+- Reviews require a delivered order item owned by the authenticated customer.
+- One review per customer and product, with pending, published, and rejected moderation states.
+- Published reviews and aggregate ratings appear on public product details.
+- Customers can open and follow complaints tied to their own checkout orders.
+- Administrators can triage, resolve, or dismiss complaints with customer-visible response notes.
+- Complaint changes create persistent account notifications atomically.
+
+The next slice adds administrator category, user, and product-management tools.

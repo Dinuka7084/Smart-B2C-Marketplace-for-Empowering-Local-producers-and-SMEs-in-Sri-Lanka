@@ -5,15 +5,21 @@ import { requireAuth, requireRole, type AuthContext } from '../auth/middleware.t
 import { getDb } from '../db/client.ts';
 import {
   categories,
+  checkoutOrders,
+  complaints,
   inventory,
   notifications,
+  orderItems,
   products,
+  reviews,
   vendorProfiles,
+  vendorOrders,
   wishlistItems,
   wishlists,
 } from '../db/schema.ts';
 import { engagementId, wishlistItemSchema } from '../engagement/validation.ts';
 import { AppError } from '../errors/app-error.ts';
+import { complaintInputSchema, reviewInputSchema } from '../support/validation.ts';
 
 export const customerEngagementRouter = Router();
 
@@ -147,4 +153,76 @@ customerEngagementRouter.patch('/notifications/:notificationId/read', async (req
     .returning({ id: notifications.id });
   if (!record) throw new AppError('Notification was not found.', 404, 'NOTIFICATION_NOT_FOUND');
   response.json({ notification: { id: record.id, isRead: true } });
+});
+
+const deliveredOrderItem = async (customerId: string, productId: string) => {
+  const [item] = await getDb()
+    .select({ id: orderItems.id })
+    .from(orderItems)
+    .innerJoin(vendorOrders, eq(vendorOrders.id, orderItems.vendorOrderId))
+    .innerJoin(checkoutOrders, eq(checkoutOrders.id, vendorOrders.checkoutOrderId))
+    .where(and(eq(checkoutOrders.customerId, customerId), eq(orderItems.productId, productId), eq(vendorOrders.status, 'delivered')))
+    .orderBy(desc(checkoutOrders.createdAt))
+    .limit(1);
+  return item;
+};
+
+customerEngagementRouter.get('/reviews/eligibility/:productId', async (request, response) => {
+  const parsed = engagementId(request.params.productId);
+  if (!parsed.success) throw new AppError('Product id is invalid.', 400, 'INVALID_PRODUCT_ID');
+  const auth = response.locals.auth as AuthContext;
+  const [item, existing] = await Promise.all([
+    deliveredOrderItem(auth.userId, parsed.data),
+    getDb().select({ id: reviews.id, rating: reviews.rating, comment: reviews.comment, status: reviews.status }).from(reviews).where(and(eq(reviews.customerId, auth.userId), eq(reviews.productId, parsed.data))).limit(1),
+  ]);
+  response.json({ eligible: Boolean(item) && existing.length === 0, review: existing[0] ?? null });
+});
+
+customerEngagementRouter.post('/reviews', async (request, response) => {
+  const parsed = reviewInputSchema.safeParse(request.body);
+  if (!parsed.success) throw new AppError('Review details are invalid.', 400, 'VALIDATION_ERROR', parsed.error.flatten().fieldErrors);
+  const auth = response.locals.auth as AuthContext;
+  const item = await deliveredOrderItem(auth.userId, parsed.data.productId);
+  if (!item) throw new AppError('Only delivered purchases can be reviewed.', 403, 'REVIEW_NOT_ELIGIBLE');
+  const [review] = await getDb()
+    .insert(reviews)
+    .values({ customerId: auth.userId, productId: parsed.data.productId, orderItemId: item.id, rating: parsed.data.rating, comment: parsed.data.comment })
+    .onConflictDoNothing()
+    .returning({ id: reviews.id, status: reviews.status });
+  if (!review) throw new AppError('You have already reviewed this product.', 409, 'REVIEW_ALREADY_EXISTS');
+  response.status(201).json({ review });
+});
+
+customerEngagementRouter.get('/complaints', async (_request, response) => {
+  const auth = response.locals.auth as AuthContext;
+  const records = await getDb()
+    .select({
+      id: complaints.id,
+      checkoutOrderId: complaints.checkoutOrderId,
+      orderReference: checkoutOrders.reference,
+      subject: complaints.subject,
+      description: complaints.description,
+      status: complaints.status,
+      resolutionNote: complaints.resolutionNote,
+      createdAt: complaints.createdAt,
+      updatedAt: complaints.updatedAt,
+    })
+    .from(complaints)
+    .innerJoin(checkoutOrders, eq(checkoutOrders.id, complaints.checkoutOrderId))
+    .where(eq(complaints.customerId, auth.userId))
+    .orderBy(desc(complaints.createdAt));
+  response.json({ complaints: records });
+});
+
+customerEngagementRouter.post('/complaints', async (request, response) => {
+  const parsed = complaintInputSchema.safeParse(request.body);
+  if (!parsed.success) throw new AppError('Complaint details are invalid.', 400, 'VALIDATION_ERROR', parsed.error.flatten().fieldErrors);
+  const auth = response.locals.auth as AuthContext;
+  const [order] = await getDb().select({ id: checkoutOrders.id }).from(checkoutOrders).where(and(eq(checkoutOrders.id, parsed.data.checkoutOrderId), eq(checkoutOrders.customerId, auth.userId))).limit(1);
+  if (!order) throw new AppError('Order was not found.', 404, 'ORDER_NOT_FOUND');
+  const [complaint] = await getDb()
+    .insert(complaints)
+    .values({ customerId: auth.userId, checkoutOrderId: order.id, subject: parsed.data.subject, description: parsed.data.description })
+    .returning({ id: complaints.id, status: complaints.status, createdAt: complaints.createdAt });
+  response.status(201).json({ complaint });
 });

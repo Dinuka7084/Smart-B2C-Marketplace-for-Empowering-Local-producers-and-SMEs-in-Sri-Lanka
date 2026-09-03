@@ -47,9 +47,9 @@ app.get('/api/v1', (_request, response) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/cart', cartRouter);
+app.use('/api/v1', catalogRouter);
 app.use('/api/v1', customerCommerceRouter);
 app.use('/api/v1', customerEngagementRouter);
-app.use('/api/v1', catalogRouter);
 app.use('/api/v1/vendor', vendorCatalogRouter);
 app.use('/api/v1/vendor', vendorOrdersRouter);
 
