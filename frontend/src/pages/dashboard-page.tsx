@@ -24,6 +24,7 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '@/auth/auth-context';
+import { formatPrice } from '@/catalog/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { apiRequest, type UserRole } from '@/lib/api';
+import type { VendorMetrics } from '@/inventory/types';
 import { AdminSupportView } from '@/pages/admin-support';
 import { AdminCategoriesView } from '@/pages/admin-categories';
 import { AdminProductsView } from '@/pages/admin-products';
@@ -55,6 +57,7 @@ import { CustomerNotificationsView } from '@/pages/customer-notifications';
 import { CustomerOrdersView } from '@/pages/customer-orders';
 import { CustomerWishlistView } from '@/pages/customer-wishlist';
 import { VendorOrdersView } from '@/pages/vendor-orders';
+import { VendorInventoryView } from '@/pages/vendor-inventory';
 import { VendorProductsView } from '@/pages/vendor-products';
 
 type NavItem = {
@@ -84,7 +87,7 @@ const roleConfig: Record<
     items: [
       { label: 'Overview', icon: Home, path: '/vendor' },
       { label: 'Products', icon: Store, path: '/vendor/products' },
-      { label: 'Inventory', icon: Boxes },
+      { label: 'Inventory', icon: Boxes, path: '/vendor/inventory' },
       { label: 'Orders', icon: PackageCheck, path: '/vendor/orders' },
       { label: 'Analytics', icon: BarChart3 },
     ],
@@ -249,6 +252,17 @@ function CustomerOverview() {
 
 function VendorOverview() {
   const { user } = useAuth();
+  const [metrics, setMetrics] = useState<VendorMetrics | null>(null);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (user?.vendorApprovalStatus !== 'approved') return;
+    apiRequest<{ metrics: VendorMetrics }>('/vendor/metrics')
+      .then((data) => { if (active) setMetrics(data.metrics); })
+      .catch((caught: unknown) => { if (active) setMetricsError(caught instanceof Error ? caught.message : 'Could not load store metrics.'); });
+    return () => { active = false; };
+  }, [user?.vendorApprovalStatus]);
 
   if (user?.vendorApprovalStatus === 'pending') {
     return (
@@ -296,11 +310,13 @@ function VendorOverview() {
           <ShieldCheck /> Approved vendor
         </Badge>
       </div>
+      {metricsError && <Alert variant="destructive" className="mb-5"><AlertCircle /><AlertTitle>Metrics unavailable</AlertTitle><AlertDescription>{metricsError}</AlertDescription></Alert>}
       {statCards([
-        { label: 'Published products', value: '0', detail: 'Product management comes next' },
-        { label: 'Orders to fulfil', value: '0', detail: 'No orders waiting' },
-        { label: 'Low stock', value: '0', detail: 'Inventory is clear' },
+        { label: 'Published products', value: String(metrics?.publishedProducts ?? 0), detail: 'Live marketplace listings' },
+        { label: 'Orders to fulfil', value: String(metrics?.ordersToFulfil ?? 0), detail: 'Placed or processing orders' },
+        { label: 'Low stock', value: String(metrics?.lowStock ?? 0), detail: metrics?.lowStock ? 'Inventory needs attention' : 'Inventory is clear' },
       ])}
+      <section className="mt-6 rounded-2xl border bg-card p-6 shadow-sm"><p className="text-sm font-semibold text-muted-foreground">Delivered sales</p><p className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-primary">{formatPrice(metrics?.deliveredRevenueCents ?? 0, metrics?.currency ?? 'LKR')}</p><p className="mt-2 text-sm text-muted-foreground">Revenue from vendor orders marked delivered.</p></section>
     </div>
   );
 }
@@ -502,7 +518,7 @@ function AdminOverview() {
   );
 }
 
-export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'orders' | 'order-detail' | 'wishlist' | 'notifications' | 'complaints' | 'support' | 'categories' | 'users' | 'admin-products' }) {
+export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'inventory' | 'orders' | 'order-detail' | 'wishlist' | 'notifications' | 'complaints' | 'support' | 'categories' | 'users' | 'admin-products' }) {
   return (
     <DashboardShell>
       {workspace === 'customer' && view === 'overview' && <CustomerOverview />}
@@ -513,6 +529,7 @@ export function DashboardPage({ workspace, view = 'overview' }: { workspace: Use
       {workspace === 'customer' && view === 'complaints' && <CustomerComplaintsView />}
       {workspace === 'vendor' && view === 'overview' && <VendorOverview />}
       {workspace === 'vendor' && view === 'products' && <VendorProductsView />}
+      {workspace === 'vendor' && view === 'inventory' && <VendorInventoryView />}
       {workspace === 'vendor' && view === 'orders' && <VendorOrdersView />}
       {workspace === 'admin' && view === 'overview' && <AdminOverview />}
       {workspace === 'admin' && view === 'support' && <AdminSupportView />}

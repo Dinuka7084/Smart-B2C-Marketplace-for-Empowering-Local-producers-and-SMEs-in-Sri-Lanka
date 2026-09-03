@@ -54,6 +54,12 @@ export const complaintStatus = pgEnum('complaint_status', [
   'resolved',
   'dismissed',
 ]);
+export const inventoryMovementType = pgEnum('inventory_movement_type', [
+  'initial',
+  'restock',
+  'adjustment',
+  'sale',
+]);
 
 export const users = pgTable(
   'users',
@@ -214,6 +220,33 @@ export const inventory = pgTable(
       'inventory_threshold_nonnegative',
       sql`${table.lowStockThreshold} >= 0`,
     ),
+  ],
+);
+
+export const inventoryMovements = pgTable(
+  'inventory_movements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    actorUserId: uuid('actor_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    type: inventoryMovementType('type').notNull(),
+    quantityDelta: integer('quantity_delta').notNull(),
+    quantityBefore: integer('quantity_before').notNull(),
+    quantityAfter: integer('quantity_after').notNull(),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('inventory_movements_product_created_idx').on(table.productId, table.createdAt),
+    check('inventory_movements_delta_nonzero', sql`${table.quantityDelta} <> 0`),
+    check('inventory_movements_before_nonnegative', sql`${table.quantityBefore} >= 0`),
+    check('inventory_movements_after_nonnegative', sql`${table.quantityAfter} >= 0`),
   ],
 );
 

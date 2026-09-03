@@ -297,9 +297,21 @@ customerCommerceRouter.post('/checkout', async (request, response) => {
               AND v.approval_status = 'approved'
               AND c.is_active = TRUE
               AND i.available_quantity >= ${line.quantity}
-            RETURNING i.product_id
+            RETURNING i.product_id, i.available_quantity
+          ), movement AS (
+            INSERT INTO inventory_movements (
+              product_id, actor_user_id, type, quantity_delta,
+              quantity_before, quantity_after, note
+            )
+            SELECT product_id, ${auth.userId}, 'sale', ${-line.quantity},
+              available_quantity + ${line.quantity}, available_quantity,
+              ${`Sold through checkout ${reference}`}
+            FROM updated
+            RETURNING id
           )
-          SELECT 1 / COUNT(*)::int AS stock_guard FROM updated
+          SELECT 1 / COUNT(*)::int AS stock_guard,
+            (SELECT COUNT(*)::int FROM movement) AS movement_count
+          FROM updated
         `);
 
         queries.push(transaction`

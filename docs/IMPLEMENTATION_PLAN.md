@@ -271,4 +271,12 @@ The administrator management slice is implemented:
 - Platform-wide product listing with publication, unpublishing, archiving, and recovery actions.
 - Server-side publication checks for vendor approval and category visibility.
 
-The next slice adds vendor inventory controls, low-stock alerts, and operational dashboard metrics.
+The vendor inventory and operational dashboard slice is implemented:
+
+- Approved vendors can review all owned stock records and change available quantities and low-stock thresholds.
+- Quantity changes produce an immutable inventory-movement ledger with actor, reason, signed delta, and before/after balances.
+- Product creation records initial stock, while successful checkout records sale movements in the same atomic transaction as stock reduction.
+- The inventory workspace highlights low-stock products and presents the latest 100 movement events.
+- Vendor dashboard metrics now report published products, active fulfilment work, low-stock products, and delivered-order revenue.
+
+The next slice adds vendor sales analytics and Groq-assisted product-description drafting.

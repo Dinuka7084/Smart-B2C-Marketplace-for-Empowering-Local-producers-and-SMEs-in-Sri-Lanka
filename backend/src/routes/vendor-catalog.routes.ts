@@ -19,10 +19,11 @@ import {
   requireRole,
   type AuthContext,
 } from '../auth/middleware.ts';
-import { getDb } from '../db/client.ts';
+import { getDb, getSqlClient } from '../db/client.ts';
 import {
   categories,
   inventory,
+  inventoryMovements,
   products,
   vendorProfiles,
 } from '../db/schema.ts';
@@ -154,8 +155,8 @@ vendorCatalogRouter.post('/products', async (request, response) => {
   const productId = randomUUID();
 
   try {
-    await getDb().batch([
-      getDb().insert(products).values({
+    const db = getDb();
+    const productInsert = db.insert(products).values({
         id: productId,
         vendorId,
         categoryId: input.categoryId,
@@ -166,13 +167,29 @@ vendorCatalogRouter.post('/products', async (request, response) => {
         priceCents: priceLkrToCents(input.priceLkr),
         status: input.status,
         publishedAt: input.status === 'published' ? new Date() : null,
-      }),
-      getDb().insert(inventory).values({
+      });
+    const inventoryInsert = db.insert(inventory).values({
         productId,
         availableQuantity: input.stock,
         lowStockThreshold: input.lowStockThreshold,
-      }),
-    ]);
+      });
+    if (input.stock > 0) {
+      await db.batch([
+        productInsert,
+        inventoryInsert,
+        db.insert(inventoryMovements).values({
+          productId,
+          actorUserId: auth.userId,
+          type: 'initial',
+          quantityDelta: input.stock,
+          quantityBefore: 0,
+          quantityAfter: input.stock,
+          note: 'Initial product stock',
+        }),
+      ]);
+    } else {
+      await db.batch([productInsert, inventoryInsert]);
+    }
   } catch (error) {
     handleProductDatabaseError(error);
   }
@@ -337,22 +354,103 @@ vendorCatalogRouter.patch(
     const vendorId = await getVendorProfileId(auth);
     await assertOwnedProduct(productId, vendorId);
 
-    const [updated] = await getDb()
-      .update(inventory)
-      .set({
-        availableQuantity: parsed.data.availableQuantity,
-        ...(parsed.data.lowStockThreshold === undefined
-          ? {}
-          : { lowStockThreshold: parsed.data.lowStockThreshold }),
-        updatedAt: new Date(),
-      })
-      .where(eq(inventory.productId, productId))
-      .returning({
-        availableQuantity: inventory.availableQuantity,
-        reservedQuantity: inventory.reservedQuantity,
-        lowStockThreshold: inventory.lowStockThreshold,
-      });
-
-    response.json({ inventory: updated });
+    const rows = await getSqlClient()`
+      WITH previous AS MATERIALIZED (
+        SELECT i.product_id, i.available_quantity
+        FROM inventory i
+        INNER JOIN products p ON p.id = i.product_id
+        WHERE i.product_id = ${productId} AND p.vendor_id = ${vendorId}
+        FOR UPDATE
+      ), updated AS (
+        UPDATE inventory i
+        SET available_quantity = ${parsed.data.availableQuantity},
+          low_stock_threshold = COALESCE(${parsed.data.lowStockThreshold ?? null}, i.low_stock_threshold),
+          updated_at = NOW()
+        FROM previous p
+        WHERE i.product_id = p.product_id
+        RETURNING i.product_id, i.available_quantity, i.reserved_quantity, i.low_stock_threshold
+      ), movement AS (
+        INSERT INTO inventory_movements (
+          product_id, actor_user_id, type, quantity_delta,
+          quantity_before, quantity_after, note
+        )
+        SELECT u.product_id, ${auth.userId},
+          CASE WHEN u.available_quantity > p.available_quantity
+            THEN 'restock'::inventory_movement_type
+            ELSE 'adjustment'::inventory_movement_type END,
+          u.available_quantity - p.available_quantity,
+          p.available_quantity, u.available_quantity,
+          ${parsed.data.note ?? 'Manual vendor inventory update'}
+        FROM updated u
+        INNER JOIN previous p ON p.product_id = u.product_id
+        WHERE u.available_quantity <> p.available_quantity
+        RETURNING id
+      )
+      SELECT available_quantity, reserved_quantity, low_stock_threshold,
+        (SELECT COUNT(*)::int FROM movement) AS movement_count
+      FROM updated
+    `;
+    if (!Array.isArray(rows) || rows.length === 0) throw new AppError('Inventory was not found.', 404, 'INVENTORY_NOT_FOUND');
+    const updated = rows[0] as Record<string, number>;
+    response.json({
+      inventory: {
+        availableQuantity: updated.available_quantity,
+        reservedQuantity: updated.reserved_quantity,
+        lowStockThreshold: updated.low_stock_threshold,
+      },
+    });
   },
 );
+
+vendorCatalogRouter.get('/inventory', async (_request, response) => {
+  const auth = response.locals.auth as AuthContext;
+  const vendorId = await getVendorProfileId(auth);
+  const db = getDb();
+  const [records, movements] = await Promise.all([
+    db.select({
+      productId: products.id,
+      name: products.name,
+      sku: products.sku,
+      status: products.status,
+      imageUrl: products.imageUrl,
+      availableQuantity: inventory.availableQuantity,
+      reservedQuantity: inventory.reservedQuantity,
+      lowStockThreshold: inventory.lowStockThreshold,
+      updatedAt: inventory.updatedAt,
+    }).from(products).innerJoin(inventory, eq(inventory.productId, products.id)).where(eq(products.vendorId, vendorId)).orderBy(desc(inventory.updatedAt)),
+    db.select({
+      id: inventoryMovements.id,
+      productId: inventoryMovements.productId,
+      productName: products.name,
+      type: inventoryMovements.type,
+      quantityDelta: inventoryMovements.quantityDelta,
+      quantityBefore: inventoryMovements.quantityBefore,
+      quantityAfter: inventoryMovements.quantityAfter,
+      note: inventoryMovements.note,
+      createdAt: inventoryMovements.createdAt,
+    }).from(inventoryMovements).innerJoin(products, eq(products.id, inventoryMovements.productId)).where(eq(products.vendorId, vendorId)).orderBy(desc(inventoryMovements.createdAt)).limit(100),
+  ]);
+  response.json({ inventory: records, movements });
+});
+
+vendorCatalogRouter.get('/metrics', async (_request, response) => {
+  const auth = response.locals.auth as AuthContext;
+  const vendorId = await getVendorProfileId(auth);
+  const rows = await getSqlClient()`
+    SELECT
+      (SELECT COUNT(*)::int FROM products WHERE vendor_id = ${vendorId} AND status = 'published') AS published_products,
+      (SELECT COUNT(*)::int FROM vendor_orders WHERE vendor_id = ${vendorId} AND status IN ('placed', 'processing')) AS orders_to_fulfil,
+      (SELECT COUNT(*)::int FROM inventory i INNER JOIN products p ON p.id = i.product_id WHERE p.vendor_id = ${vendorId} AND i.available_quantity <= i.low_stock_threshold) AS low_stock,
+      (SELECT COALESCE(SUM(subtotal_cents), 0)::int FROM vendor_orders WHERE vendor_id = ${vendorId} AND status = 'delivered') AS delivered_revenue_cents
+  `;
+  const metrics = Array.isArray(rows) ? rows[0] as Record<string, number> : {};
+  response.json({
+    metrics: {
+      publishedProducts: metrics.published_products ?? 0,
+      ordersToFulfil: metrics.orders_to_fulfil ?? 0,
+      lowStock: metrics.low_stock ?? 0,
+      deliveredRevenueCents: metrics.delivered_revenue_cents ?? 0,
+      currency: 'LKR',
+    },
+  });
+});

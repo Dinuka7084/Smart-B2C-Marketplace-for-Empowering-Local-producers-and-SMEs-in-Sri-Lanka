@@ -6,6 +6,7 @@ import {
   priceLkrToCents,
   productImageSchema,
   productInputSchema,
+  inventoryUpdateSchema,
 } from './validation.ts';
 
 test('product input normalizes SKU and converts LKR to integer cents', () => {
@@ -61,4 +62,10 @@ test('product images must use secure Cloudinary delivery URLs', () => {
     }).success,
     false,
   );
+});
+
+test('inventory updates require nonnegative quantities and useful optional notes', () => {
+  assert.equal(inventoryUpdateSchema.safeParse({ availableQuantity: 5, note: 'Restocked from Matale supplier.' }).success, true);
+  assert.equal(inventoryUpdateSchema.safeParse({ availableQuantity: -1 }).success, false);
+  assert.equal(inventoryUpdateSchema.safeParse({ availableQuantity: 5, note: 'x' }).success, false);
 });

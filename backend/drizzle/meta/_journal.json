@@ -43,6 +43,13 @@
       "when": 1788468781771,
       "tag": "0005_perpetual_centennial",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788470046436,
+      "tag": "0006_long_nebula",
+      "breakpoints": true
     }
   ]
 }

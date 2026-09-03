@@ -99,6 +99,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/vendor/inventory"
+        element={
+          <ProtectedRoute roles={['vendor']}>
+            <DashboardPage workspace="vendor" view="inventory" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/vendor/orders"
         element={
           <ProtectedRoute roles={['vendor']}>

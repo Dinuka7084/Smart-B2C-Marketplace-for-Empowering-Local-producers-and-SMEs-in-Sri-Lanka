@@ -38,6 +38,7 @@ export const productUpdateSchema = productInputSchema
 export const inventoryUpdateSchema = z.object({
   availableQuantity: z.coerce.number().int().min(0).max(1_000_000),
   lowStockThreshold: z.coerce.number().int().min(0).max(100_000).optional(),
+  note: z.string().trim().min(3).max(500).optional(),
 });
 
 export const productImageSchema = z.object({

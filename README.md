@@ -52,6 +52,8 @@ The academic checkout at `/checkout` saves delivery addresses, simulates a succe
 
 Approved vendors fulfil their child orders at `/vendor/orders`; customers can open `/account/orders/:orderId` to follow each vendor's audited tracking timeline.
 
+Vendors manage stock and review its audit trail at `/vendor/inventory`. The vendor overview displays live product, fulfilment, low-stock, and delivered-revenue metrics. Inventory API rules are documented in `docs/INVENTORY_API.md`.
+
 Customers can save products at `/account/wishlist` and review order activity at `/account/notifications`. API ownership and event rules are documented in `docs/ENGAGEMENT_API.md`.
 
 Delivered purchases can be reviewed from product pages, while order complaints live at `/account/complaints`. Administrators moderate both workflows at `/admin/support`; rules are documented in `docs/SUPPORT_API.md`.
