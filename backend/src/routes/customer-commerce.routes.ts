@@ -350,6 +350,14 @@ customerCommerceRouter.post('/checkout', async (request, response) => {
             ${totals.totalCents}, 'LKR', ${paidAt}
           )
         `);
+        queries.push(transaction`
+          INSERT INTO notifications (id, user_id, type, title, message, link)
+          VALUES (
+            ${randomUUID()}, ${auth.userId}, 'order_confirmed', 'Order confirmed',
+            ${`${reference} has been placed and paid successfully.`},
+            ${`/account/orders/${orderId}`}
+          )
+        `);
         queries.push(transaction`DELETE FROM cart_items WHERE cart_id = ${cart.id}`);
         queries.push(transaction`UPDATE carts SET updated_at = NOW() WHERE id = ${cart.id}`);
         return queries;

@@ -112,8 +112,14 @@ vendorOrdersRouter.patch('/orders/:orderId/status', async (request, response) =>
   const auth = response.locals.auth as AuthContext;
   const vendorId = await getVendorId(auth.userId);
   const [order] = await getDb()
-    .select({ status: vendorOrders.status })
+    .select({
+      status: vendorOrders.status,
+      customerId: checkoutOrders.customerId,
+      reference: checkoutOrders.reference,
+      checkoutOrderId: checkoutOrders.id,
+    })
     .from(vendorOrders)
+    .innerJoin(checkoutOrders, eq(checkoutOrders.id, vendorOrders.checkoutOrderId))
     .where(and(eq(vendorOrders.id, orderId), eq(vendorOrders.vendorId, vendorId)))
     .limit(1);
 
@@ -126,6 +132,13 @@ vendorOrdersRouter.patch('/orders/:orderId/status', async (request, response) =>
     );
   }
 
+  const notificationTitle = parsed.data.nextStatus === 'cancelled'
+    ? 'Order fulfilment cancelled'
+    : `Order ${parsed.data.nextStatus}`;
+  const notificationMessage = parsed.data.nextStatus === 'cancelled'
+    ? `${order.reference} was cancelled by the vendor. Open tracking for details.`
+    : `${order.reference} is now ${parsed.data.nextStatus}.`;
+
   const rows = await getSqlClient()`
     WITH updated AS (
       UPDATE vendor_orders
@@ -134,14 +147,21 @@ vendorOrdersRouter.patch('/orders/:orderId/status', async (request, response) =>
         AND vendor_id = ${vendorId}
         AND status = ${order.status}
       RETURNING id
+    ), history AS (
+      INSERT INTO order_status_history (
+        id, vendor_order_id, actor_user_id, previous_status, next_status, note
+      )
+      SELECT ${randomUUID()}, id, ${auth.userId}, ${order.status},
+        ${parsed.data.nextStatus}, ${parsed.data.note ?? null}
+      FROM updated
+      RETURNING vendor_order_id
     )
-    INSERT INTO order_status_history (
-      id, vendor_order_id, actor_user_id, previous_status, next_status, note
-    )
-    SELECT ${randomUUID()}, id, ${auth.userId}, ${order.status},
-      ${parsed.data.nextStatus}, ${parsed.data.note ?? null}
-    FROM updated
-    RETURNING vendor_order_id
+    INSERT INTO notifications (id, user_id, type, title, message, link)
+    SELECT ${randomUUID()}, ${order.customerId}, 'order_status',
+      ${notificationTitle}, ${notificationMessage},
+      ${`/account/orders/${order.checkoutOrderId}`}
+    FROM history
+    RETURNING user_id
   `;
 
   if (!Array.isArray(rows) || rows.length === 0) {

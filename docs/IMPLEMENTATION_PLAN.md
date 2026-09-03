@@ -247,4 +247,11 @@ The vendor fulfilment and tracking slice is implemented:
 - Customers can open an order and track each vendor shipment independently.
 - Focused transition tests cover the happy path and cancellation validation.
 
-The next slice adds customer wishlists and notifications, followed by reviews and complaint workflows.
+The customer engagement slice is implemented:
+
+- Neon-backed wishlists with idempotent saving and customer ownership enforcement.
+- Product-detail save/remove controls and a protected wishlist with move-to-cart actions.
+- Persistent checkout and fulfilment notifications with read and mark-all-read actions.
+- Order notifications and their matching business events are created in the same transaction.
+
+The next slice adds verified-purchase reviews and the customer complaint workflow.

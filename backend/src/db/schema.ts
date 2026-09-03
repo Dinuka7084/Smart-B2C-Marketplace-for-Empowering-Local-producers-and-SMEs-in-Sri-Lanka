@@ -38,6 +38,10 @@ export const vendorOrderStatus = pgEnum('vendor_order_status', [
   'cancelled',
 ]);
 export const paymentStatus = pgEnum('payment_status', ['paid', 'refunded']);
+export const notificationType = pgEnum('notification_type', [
+  'order_confirmed',
+  'order_status',
+]);
 
 export const users = pgTable(
   'users',
@@ -242,6 +246,42 @@ export const cartItems = pgTable(
   ],
 );
 
+export const wishlists = pgTable(
+  'wishlists',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [uniqueIndex('wishlists_user_id_unique').on(table.userId)],
+);
+
+export const wishlistItems = pgTable(
+  'wishlist_items',
+  {
+    wishlistId: uuid('wishlist_id')
+      .notNull()
+      .references(() => wishlists.id, { onDelete: 'cascade' }),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.wishlistId, table.productId] }),
+    index('wishlist_items_product_id_idx').on(table.productId),
+  ],
+);
+
 export const addresses = pgTable(
   'addresses',
   {
@@ -398,6 +438,28 @@ export const payments = pgTable(
     uniqueIndex('payments_checkout_order_id_unique').on(table.checkoutOrderId),
     uniqueIndex('payments_provider_reference_unique').on(table.providerReference),
     check('payments_amount_nonnegative', sql`${table.amountCents} >= 0`),
+  ],
+);
+
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: notificationType('type').notNull(),
+    title: varchar('title', { length: 160 }).notNull(),
+    message: text('message').notNull(),
+    link: varchar('link', { length: 300 }),
+    isRead: boolean('is_read').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('notifications_user_id_created_at_idx').on(table.userId, table.createdAt),
+    index('notifications_user_id_is_read_idx').on(table.userId, table.isRead),
   ],
 );
 

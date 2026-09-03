@@ -52,6 +52,8 @@ The academic checkout at `/checkout` saves delivery addresses, simulates a succe
 
 Approved vendors fulfil their child orders at `/vendor/orders`; customers can open `/account/orders/:orderId` to follow each vendor's audited tracking timeline.
 
+Customers can save products at `/account/wishlist` and review order activity at `/account/notifications`. API ownership and event rules are documented in `docs/ENGAGEMENT_API.md`.
+
 Authentication uses an HTTP-only session cookie. The usable token is never stored in the database; Neon stores an HMAC digest and expiry instead.
 
 ## Validation

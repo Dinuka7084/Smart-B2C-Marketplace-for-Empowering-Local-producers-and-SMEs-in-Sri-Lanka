@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Leaf, PackageCheck, ShieldCheck, ShoppingBag, Store } from 'lucide-react';
+import { ArrowLeft, Check, Heart, Leaf, PackageCheck, ShieldCheck, ShoppingBag, Store } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { useAuth } from '@/auth/auth-context';
@@ -18,6 +18,8 @@ export function ProductDetailPage() {
   const [quantity, setQuantity] = useState('1');
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -36,6 +38,15 @@ export function ProductDetailPage() {
     return () => { active = false; };
   }, [slug]);
 
+  useEffect(() => {
+    let active = true;
+    if (!product || user?.role !== 'customer') return;
+    apiRequest<{ saved: boolean }>(`/wishlist/items/${product.id}`)
+      .then((data) => { if (active) setSaved(data.saved); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [product, user]);
+
   const addToCart = async () => {
     if (!product) return;
     setAdding(true); setActionError(null); setAdded(false);
@@ -48,6 +59,19 @@ export function ProductDetailPage() {
     } catch (caught) {
       setActionError(caught instanceof Error ? caught.message : 'This product could not be added to your cart.');
     } finally { setAdding(false); }
+  };
+
+  const toggleWishlist = async () => {
+    if (!product) return;
+    setSaving(true); setActionError(null);
+    try {
+      await apiRequest(saved ? `/wishlist/items/${product.id}` : '/wishlist/items', saved
+        ? { method: 'DELETE' }
+        : { method: 'POST', body: JSON.stringify({ productId: product.id }) });
+      setSaved((current) => !current);
+    } catch (caught) {
+      setActionError(caught instanceof Error ? caught.message : 'Your wishlist could not be updated.');
+    } finally { setSaving(false); }
   };
 
   return (
@@ -102,11 +126,14 @@ export function ProductDetailPage() {
                 ) : !user ? (
                   <Button className="w-full" size="lg" render={<Link to="/login" state={{ from: `/products/${product.slug}` }} />}><ShoppingBag /> Sign in to add to cart</Button>
                 ) : user?.role === 'customer' ? (
-                  <div className="flex gap-3">
-                    <NativeSelect className="w-24" size="default" value={quantity} disabled={product.availableQuantity < 1} onChange={(event) => setQuantity(event.target.value)} aria-label="Quantity">
-                      {Array.from({ length: Math.min(100, product.availableQuantity) }, (_, index) => index + 1).map((value) => <NativeSelectOption key={value} value={value}>{value}</NativeSelectOption>)}
-                    </NativeSelect>
-                    <Button className="flex-1" size="lg" disabled={adding || product.availableQuantity < 1} onClick={() => void addToCart()}>{adding ? <Spinner /> : <ShoppingBag />} {product.availableQuantity > 0 ? 'Add to cart' : 'Out of stock'}</Button>
+                  <div className="grid gap-3">
+                    <div className="flex gap-3">
+                      <NativeSelect className="w-24" size="default" value={quantity} disabled={product.availableQuantity < 1} onChange={(event) => setQuantity(event.target.value)} aria-label="Quantity">
+                        {Array.from({ length: Math.min(100, product.availableQuantity) }, (_, index) => index + 1).map((value) => <NativeSelectOption key={value} value={value}>{value}</NativeSelectOption>)}
+                      </NativeSelect>
+                      <Button className="flex-1" size="lg" disabled={adding || product.availableQuantity < 1} onClick={() => void addToCart()}>{adding ? <Spinner /> : <ShoppingBag />} {product.availableQuantity > 0 ? 'Add to cart' : 'Out of stock'}</Button>
+                    </div>
+                    <Button variant="outline" size="lg" disabled={saving} onClick={() => void toggleWishlist()}>{saving ? <Spinner /> : <Heart className={saved ? 'fill-current' : ''} />} {saved ? 'Remove from wishlist' : 'Save to wishlist'}</Button>
                   </div>
                 ) : (
                   <Button className="w-full" size="lg" disabled>Customer accounts can add products to cart</Button>

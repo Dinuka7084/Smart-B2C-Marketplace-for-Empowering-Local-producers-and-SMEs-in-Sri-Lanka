@@ -59,6 +59,22 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/account/wishlist"
+        element={
+          <ProtectedRoute roles={['customer']}>
+            <DashboardPage workspace="customer" view="wishlist" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/account/notifications"
+        element={
+          <ProtectedRoute roles={['customer']}>
+            <DashboardPage workspace="customer" view="notifications" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/vendor"
         element={
           <ProtectedRoute roles={['vendor']}>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   AlertCircle,
   BarChart3,
+  Bell,
   Boxes,
   Check,
   Clock3,
@@ -42,7 +43,9 @@ import {
 } from '@/components/ui/sidebar';
 import { apiRequest, type UserRole } from '@/lib/api';
 import { CustomerOrderDetailView } from '@/pages/customer-order-detail';
+import { CustomerNotificationsView } from '@/pages/customer-notifications';
 import { CustomerOrdersView } from '@/pages/customer-orders';
+import { CustomerWishlistView } from '@/pages/customer-wishlist';
 import { VendorOrdersView } from '@/pages/vendor-orders';
 import { VendorProductsView } from '@/pages/vendor-products';
 
@@ -62,7 +65,8 @@ const roleConfig: Record<
     items: [
       { label: 'Overview', icon: Home, path: '/account' },
       { label: 'Orders', icon: ShoppingBag, path: '/account/orders' },
-      { label: 'Wishlist', icon: Heart },
+      { label: 'Wishlist', icon: Heart, path: '/account/wishlist' },
+      { label: 'Notifications', icon: Bell, path: '/account/notifications' },
     ],
   },
   vendor: {
@@ -486,12 +490,14 @@ function AdminOverview() {
   );
 }
 
-export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'orders' | 'order-detail' }) {
+export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'orders' | 'order-detail' | 'wishlist' | 'notifications' }) {
   return (
     <DashboardShell>
       {workspace === 'customer' && view === 'overview' && <CustomerOverview />}
       {workspace === 'customer' && view === 'orders' && <CustomerOrdersView />}
       {workspace === 'customer' && view === 'order-detail' && <CustomerOrderDetailView />}
+      {workspace === 'customer' && view === 'wishlist' && <CustomerWishlistView />}
+      {workspace === 'customer' && view === 'notifications' && <CustomerNotificationsView />}
       {workspace === 'vendor' && view === 'overview' && <VendorOverview />}
       {workspace === 'vendor' && view === 'products' && <VendorProductsView />}
       {workspace === 'vendor' && view === 'orders' && <VendorOrdersView />}
