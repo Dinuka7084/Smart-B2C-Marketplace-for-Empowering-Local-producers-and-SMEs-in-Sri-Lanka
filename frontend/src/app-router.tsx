@@ -122,6 +122,30 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/categories"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <DashboardPage workspace="admin" view="categories" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <DashboardPage workspace="admin" view="users" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/products"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <DashboardPage workspace="admin" view="admin-products" />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/home" element={<Navigate to="/" replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

@@ -263,4 +263,12 @@ The trust and support slice is implemented:
 - Administrators can triage, resolve, or dismiss complaints with customer-visible response notes.
 - Complaint changes create persistent account notifications atomically.
 
-The next slice adds administrator category, user, and product-management tools.
+The administrator management slice is implemented:
+
+- Category creation, metadata editing, reversible hiding, and product-count visibility.
+- Customer and vendor account suspension/reactivation with immediate session revocation.
+- Protection against administrator-account suspension through general account controls.
+- Platform-wide product listing with publication, unpublishing, archiving, and recovery actions.
+- Server-side publication checks for vendor approval and category visibility.
+
+The next slice adds vendor inventory controls, low-stock alerts, and operational dashboard metrics.

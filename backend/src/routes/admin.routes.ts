@@ -1,14 +1,20 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { z } from 'zod';
 
 import { requireAuth, requireRole, type AuthContext } from '../auth/middleware.ts';
 import { vendorApprovalSchema } from '../auth/validation.ts';
+import {
+  adminProductStatusSchema,
+  categoryInputSchema,
+  categoryUpdateSchema,
+  userStatusSchema,
+} from '../admin/validation.ts';
 import { getDb, getSqlClient } from '../db/client.ts';
-import { checkoutOrders, complaints, products, reviews, users, vendorProfiles } from '../db/schema.ts';
-import { AppError } from '../errors/app-error.ts';
+import { categories, checkoutOrders, complaints, inventory, products, reviews, sessions, users, vendorProfiles } from '../db/schema.ts';
+import { AppError, isPostgresError } from '../errors/app-error.ts';
 import { complaintDecisionSchema, reviewDecisionSchema } from '../support/validation.ts';
 
 export const adminRouter = Router();
@@ -173,4 +179,151 @@ adminRouter.patch('/complaints/:complaintId', async (request, response) => {
   `;
   if (!Array.isArray(rows) || rows.length === 0) throw new AppError('This complaint changed before your update. Refresh and try again.', 409, 'COMPLAINT_STATUS_CONFLICT');
   response.json({ complaint: { id: complaintId.data, status: parsed.data.status } });
+});
+
+adminRouter.get('/categories', async (_request, response) => {
+  const records = await getDb()
+    .select({
+      id: categories.id,
+      name: categories.name,
+      slug: categories.slug,
+      description: categories.description,
+      isActive: categories.isActive,
+      productCount: count(products.id),
+      createdAt: categories.createdAt,
+      updatedAt: categories.updatedAt,
+    })
+    .from(categories)
+    .leftJoin(products, eq(products.categoryId, categories.id))
+    .groupBy(categories.id)
+    .orderBy(asc(categories.name));
+  response.json({ categories: records });
+});
+
+adminRouter.post('/categories', async (request, response) => {
+  const parsed = categoryInputSchema.safeParse(request.body);
+  if (!parsed.success) throw new AppError('Category details are invalid.', 400, 'VALIDATION_ERROR', parsed.error.flatten().fieldErrors);
+  try {
+    const [category] = await getDb().insert(categories).values({
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      description: parsed.data.description || null,
+      isActive: parsed.data.isActive,
+    }).returning({ id: categories.id });
+    response.status(201).json({ category });
+  } catch (error) {
+    if (isPostgresError(error) && error.code === '23505') throw new AppError('That category URL is already in use.', 409, 'CATEGORY_SLUG_TAKEN');
+    throw error;
+  }
+});
+
+adminRouter.patch('/categories/:categoryId', async (request, response) => {
+  const categoryId = z.uuid().safeParse(request.params.categoryId);
+  if (!categoryId.success) throw new AppError('Category id is invalid.', 400, 'INVALID_CATEGORY_ID');
+  const parsed = categoryUpdateSchema.safeParse(request.body);
+  if (!parsed.success) throw new AppError('Category details are invalid.', 400, 'VALIDATION_ERROR', parsed.error.flatten().fieldErrors);
+  try {
+    const [category] = await getDb().update(categories).set({
+      ...parsed.data,
+      ...(parsed.data.description === undefined ? {} : { description: parsed.data.description || null }),
+      updatedAt: new Date(),
+    }).where(eq(categories.id, categoryId.data)).returning({ id: categories.id, isActive: categories.isActive });
+    if (!category) throw new AppError('Category was not found.', 404, 'CATEGORY_NOT_FOUND');
+    response.json({ category });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    if (isPostgresError(error) && error.code === '23505') throw new AppError('That category URL is already in use.', 409, 'CATEGORY_SLUG_TAKEN');
+    throw error;
+  }
+});
+
+adminRouter.get('/users', async (_request, response) => {
+  const records = await getDb()
+    .select({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      phone: users.phone,
+      role: users.role,
+      status: users.status,
+      createdAt: users.createdAt,
+      businessName: vendorProfiles.businessName,
+      vendorApprovalStatus: vendorProfiles.approvalStatus,
+    })
+    .from(users)
+    .leftJoin(vendorProfiles, eq(vendorProfiles.userId, users.id))
+    .orderBy(desc(users.createdAt));
+  response.json({ users: records });
+});
+
+adminRouter.patch('/users/:userId/status', async (request, response) => {
+  const userId = z.uuid().safeParse(request.params.userId);
+  if (!userId.success) throw new AppError('User id is invalid.', 400, 'INVALID_USER_ID');
+  const parsed = userStatusSchema.safeParse(request.body);
+  if (!parsed.success) throw new AppError('Account status is invalid.', 400, 'VALIDATION_ERROR', parsed.error.flatten().fieldErrors);
+  const [target] = await getDb().select({ id: users.id, role: users.role, status: users.status }).from(users).where(eq(users.id, userId.data)).limit(1);
+  if (!target) throw new AppError('User was not found.', 404, 'USER_NOT_FOUND');
+  if (target.role === 'admin') throw new AppError('Administrator accounts cannot be changed here.', 403, 'ADMIN_STATUS_PROTECTED');
+  if (target.status === parsed.data.status) {
+    response.json({ user: { id: target.id, status: target.status } });
+    return;
+  }
+  const update = getDb().update(users).set({ status: parsed.data.status, updatedAt: new Date() }).where(eq(users.id, target.id));
+  if (parsed.data.status === 'suspended') {
+    await getDb().batch([update, getDb().delete(sessions).where(eq(sessions.userId, target.id))]);
+  } else {
+    await update;
+  }
+  response.json({ user: { id: target.id, status: parsed.data.status } });
+});
+
+adminRouter.get('/products', async (_request, response) => {
+  const records = await getDb()
+    .select({
+      id: products.id,
+      name: products.name,
+      slug: products.slug,
+      sku: products.sku,
+      status: products.status,
+      priceCents: products.priceCents,
+      currency: products.currency,
+      imageUrl: products.imageUrl,
+      categoryName: categories.name,
+      categoryActive: categories.isActive,
+      vendorName: vendorProfiles.businessName,
+      vendorApprovalStatus: vendorProfiles.approvalStatus,
+      availableQuantity: inventory.availableQuantity,
+      updatedAt: products.updatedAt,
+    })
+    .from(products)
+    .innerJoin(categories, eq(categories.id, products.categoryId))
+    .innerJoin(vendorProfiles, eq(vendorProfiles.id, products.vendorId))
+    .innerJoin(inventory, eq(inventory.productId, products.id))
+    .orderBy(desc(products.updatedAt));
+  response.json({ products: records });
+});
+
+adminRouter.patch('/products/:productId/status', async (request, response) => {
+  const productId = z.uuid().safeParse(request.params.productId);
+  if (!productId.success) throw new AppError('Product id is invalid.', 400, 'INVALID_PRODUCT_ID');
+  const parsed = adminProductStatusSchema.safeParse(request.body);
+  if (!parsed.success) throw new AppError('Product status is invalid.', 400, 'VALIDATION_ERROR', parsed.error.flatten().fieldErrors);
+  const [record] = await getDb()
+    .select({ id: products.id, vendorApprovalStatus: vendorProfiles.approvalStatus, categoryActive: categories.isActive })
+    .from(products)
+    .innerJoin(vendorProfiles, eq(vendorProfiles.id, products.vendorId))
+    .innerJoin(categories, eq(categories.id, products.categoryId))
+    .where(eq(products.id, productId.data))
+    .limit(1);
+  if (!record) throw new AppError('Product was not found.', 404, 'PRODUCT_NOT_FOUND');
+  if (parsed.data.status === 'published' && (record.vendorApprovalStatus !== 'approved' || !record.categoryActive)) {
+    throw new AppError('Products require an approved vendor and active category before publication.', 409, 'PRODUCT_PUBLICATION_BLOCKED');
+  }
+  await getDb().update(products).set({
+    status: parsed.data.status,
+    publishedAt: parsed.data.status === 'published' ? new Date() : null,
+    updatedAt: new Date(),
+  }).where(eq(products.id, record.id));
+  response.json({ product: { id: record.id, status: parsed.data.status } });
 });

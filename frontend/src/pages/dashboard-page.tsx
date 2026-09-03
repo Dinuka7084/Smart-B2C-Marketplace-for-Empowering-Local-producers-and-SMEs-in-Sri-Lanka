@@ -6,12 +6,14 @@ import {
   Boxes,
   Check,
   Clock3,
+  FolderTree,
   Heart,
   Home,
   Leaf,
   LogOut,
   MessageSquareWarning,
   PackageCheck,
+  PackageSearch,
   ShieldCheck,
   ShoppingBag,
   Store,
@@ -44,6 +46,9 @@ import {
 } from '@/components/ui/sidebar';
 import { apiRequest, type UserRole } from '@/lib/api';
 import { AdminSupportView } from '@/pages/admin-support';
+import { AdminCategoriesView } from '@/pages/admin-categories';
+import { AdminProductsView } from '@/pages/admin-products';
+import { AdminUsersView } from '@/pages/admin-users';
 import { CustomerComplaintsView } from '@/pages/customer-complaints';
 import { CustomerOrderDetailView } from '@/pages/customer-order-detail';
 import { CustomerNotificationsView } from '@/pages/customer-notifications';
@@ -91,7 +96,9 @@ const roleConfig: Record<
       { label: 'Overview', icon: Home, path: '/admin' },
       { label: 'Vendors', icon: Store },
       { label: 'Moderation', icon: MessageSquareWarning, path: '/admin/support' },
-      { label: 'Users', icon: Users },
+      { label: 'Categories', icon: FolderTree, path: '/admin/categories' },
+      { label: 'Users', icon: Users, path: '/admin/users' },
+      { label: 'Products', icon: PackageSearch, path: '/admin/products' },
       { label: 'Platform reports', icon: BarChart3 },
     ],
   },
@@ -495,7 +502,7 @@ function AdminOverview() {
   );
 }
 
-export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'orders' | 'order-detail' | 'wishlist' | 'notifications' | 'complaints' | 'support' }) {
+export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'orders' | 'order-detail' | 'wishlist' | 'notifications' | 'complaints' | 'support' | 'categories' | 'users' | 'admin-products' }) {
   return (
     <DashboardShell>
       {workspace === 'customer' && view === 'overview' && <CustomerOverview />}
@@ -509,6 +516,9 @@ export function DashboardPage({ workspace, view = 'overview' }: { workspace: Use
       {workspace === 'vendor' && view === 'orders' && <VendorOrdersView />}
       {workspace === 'admin' && view === 'overview' && <AdminOverview />}
       {workspace === 'admin' && view === 'support' && <AdminSupportView />}
+      {workspace === 'admin' && view === 'categories' && <AdminCategoriesView />}
+      {workspace === 'admin' && view === 'users' && <AdminUsersView />}
+      {workspace === 'admin' && view === 'admin-products' && <AdminProductsView />}
     </DashboardShell>
   );
 }

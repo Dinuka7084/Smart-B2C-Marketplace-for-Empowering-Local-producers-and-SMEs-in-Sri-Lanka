@@ -56,6 +56,8 @@ Customers can save products at `/account/wishlist` and review order activity at 
 
 Delivered purchases can be reviewed from product pages, while order complaints live at `/account/complaints`. Administrators moderate both workflows at `/admin/support`; rules are documented in `docs/SUPPORT_API.md`.
 
+Administrator category, user-access, and product controls are available at `/admin/categories`, `/admin/users`, and `/admin/products`. Their safety rules are documented in `docs/ADMIN_MANAGEMENT_API.md`.
+
 Authentication uses an HTTP-only session cookie. The usable token is never stored in the database; Neon stores an HMAC digest and expiry instead.
 
 ## Validation
