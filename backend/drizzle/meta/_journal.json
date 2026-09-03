@@ -8,6 +8,20 @@
       "when": 1788452289219,
       "tag": "0000_orange_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788460398279,
+      "tag": "0001_next_brother_voodoo",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788464389864,
+      "tag": "0002_dry_machine_man",
+      "breakpoints": true
     }
   ]
 }

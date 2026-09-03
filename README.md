@@ -42,6 +42,12 @@ After adding a Neon connection string and a random session secret to `backend/.e
 
 Customer and vendor registration is available at `POST /api/v1/auth/register`. Vendor accounts begin in the `pending` state. An authenticated administrator can review them with `GET /api/v1/admin/vendors/pending` and decide with `PATCH /api/v1/admin/vendors/:vendorUserId/approval`.
 
+Approved vendors can create products at `/vendor/products`; published products appear in the searchable public catalog at `/products`. API details are documented in `docs/CATALOG_API.md`.
+
+Product images use signed direct uploads to Cloudinary. Configure the three `CLOUDINARY_*` values in `backend/.env`; the API secret stays server-side.
+
+Authenticated customers have a persistent, stock-aware cart at `/cart`. Cart API rules are documented in `docs/CART_API.md`.
+
 Authentication uses an HTTP-only session cookie. The usable token is never stored in the database; Neon stores an HMAC digest and expiry instead.
 
 ## Validation

@@ -11,7 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test --experimental-strip-types src/auth/password.test.ts src/auth/validation.test.ts",
+    "test": "node --test --experimental-strip-types src/auth/password.test.ts src/auth/validation.test.ts src/catalog/validation.test.ts src/cloudinary/signature.test.ts src/cart/validation.test.ts",
     "db:generate": "node scripts/run-drizzle-kit.cjs generate",
     "db:migrate": "node scripts/run-drizzle-kit.cjs migrate",
     "db:studio": "node scripts/run-drizzle-kit.cjs studio",

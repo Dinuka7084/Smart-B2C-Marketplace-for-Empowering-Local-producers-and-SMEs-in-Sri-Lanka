@@ -197,7 +197,7 @@ This gives a demonstrable end-to-end flow before cart, payment, AI, and analytic
 
 ## 10. Current implementation status
 
-Milestone 1 is in progress. The following identity foundation is implemented:
+Milestone 1 is code-complete and awaits a project Neon connection string for runtime verification. The following identity foundation is implemented:
 
 - Neon/Drizzle schema and initial SQL migration for users, vendor profiles, and sessions.
 - Customer and vendor registration with atomic vendor-profile creation.
@@ -212,4 +212,22 @@ Milestone 1 is in progress. The following identity foundation is implemented:
 - Pending/rejected vendor states that keep seller tools inaccessible until approval.
 - Administrator interface for reviewing, approving, and rejecting vendor applications.
 
-The next slice adds categories and the first approved-vendor product-management flow, then displays published products in the public catalog.
+The first Milestone 2 slice is implemented:
+
+- Category, product, and inventory tables with constraints and a committed SQL migration.
+- Default category seeding.
+- Approved-vendor product creation, metadata updates, owned product listing, and stock updates.
+- Public product listing with search, category filters, price/newest sorting, and pagination.
+- React public catalog with loading, empty, and error states.
+- Vendor product form and inventory table inside the protected seller workspace.
+- Public product detail pages with live price, availability, category, and seller information.
+- Signed, ownership-checked Cloudinary product-image uploads from the vendor workspace.
+
+The first Milestone 3 slice is implemented:
+
+- One persistent Neon cart per customer with constrained cart-item quantities.
+- Customer-only cart endpoints with server-side product, vendor, category, and stock validation.
+- Server-calculated line totals, subtotal, availability state, and checkout eligibility.
+- Add-to-cart controls on product details and a protected cart page with quantity and removal actions.
+
+The next slice adds customer addresses and the simulated multi-vendor checkout transaction.

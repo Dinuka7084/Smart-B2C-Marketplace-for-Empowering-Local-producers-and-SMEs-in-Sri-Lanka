@@ -25,14 +25,8 @@ const envSchema = z.object({
   SESSION_SECRET: optionalSecret,
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(30).default(7),
   SESSION_COOKIE_NAME: z.string().min(1).default('smart_lanka_session'),
-  SEED_ADMIN_EMAIL: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.email().optional(),
-  ),
-  SEED_ADMIN_PASSWORD: z.preprocess(
-    (value) => (value === '' ? undefined : value),
-    z.string().min(12).max(128).optional(),
-  ),
+  SEED_ADMIN_EMAIL: optionalString,
+  SEED_ADMIN_PASSWORD: optionalString,
   GROQ_API_KEY: optionalString,
   CLOUDINARY_CLOUD_NAME: optionalString,
   CLOUDINARY_API_KEY: optionalString,

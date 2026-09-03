@@ -17,10 +17,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const categories = [
-  { name: 'Spice & pantry', detail: 'Harvested close to home', icon: Leaf },
-  { name: 'Home & craft', detail: 'Made by skilled hands', icon: Sparkles },
-  { name: 'Handloom & wear', detail: 'Small-batch textiles', icon: ShoppingBag },
-  { name: 'Wellness', detail: 'Naturally considered', icon: Heart },
+  { name: 'Spice & pantry', slug: 'spice-pantry', detail: 'Harvested close to home', icon: Leaf },
+  { name: 'Home & craft', slug: 'home-craft', detail: 'Made by skilled hands', icon: Sparkles },
+  { name: 'Handloom & wear', slug: 'handloom-wear', detail: 'Small-batch textiles', icon: ShoppingBag },
+  { name: 'Wellness', slug: 'wellness', detail: 'Naturally considered', icon: Heart },
 ];
 
 const products = [
@@ -66,12 +66,12 @@ export default function App() {
           </Link>
 
           <nav className="ml-4 hidden items-center gap-7 text-sm font-semibold lg:flex" aria-label="Primary navigation">
-            <a className="transition-colors hover:text-primary" href="#featured">Shop</a>
+            <Link className="transition-colors hover:text-primary" to="/products">Shop</Link>
             <a className="transition-colors hover:text-primary" href="#categories">Categories</a>
             <a className="transition-colors hover:text-primary" href="#for-producers">For producers</a>
           </nav>
 
-          <form className="relative ml-auto hidden w-full max-w-sm md:block">
+          <form action="/products" method="get" className="relative ml-auto hidden w-full max-w-sm md:block">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-11 rounded-full border-border bg-muted/60 pl-10 pr-4 text-base md:text-sm"
@@ -87,7 +87,7 @@ export default function App() {
           >
             {user ? 'My workspace' : 'Sign in'}
           </Link>
-          <Button variant="outline" size="icon-lg" className="rounded-full" aria-label="Open shopping cart">
+          <Button variant="outline" size="icon-lg" className="rounded-full" aria-label="Open shopping cart" render={<Link to="/cart" />}>
             <ShoppingBag />
           </Button>
         </div>
@@ -115,12 +115,12 @@ export default function App() {
               Shop food, craft, homeware and everyday goods directly from Sri Lankan producers and independent businesses.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
-              <a
-                href="#featured"
+              <Link
+                to="/products"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#f4c95d] px-6 text-base font-bold text-[#143f32] transition hover:bg-[#ffd978] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
               >
                 Explore products <ArrowRight className="size-4" />
-              </a>
+              </Link>
               <a
                 href="#for-producers"
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/30 bg-white/10 px-6 text-base font-bold text-white backdrop-blur-sm transition hover:bg-white/18 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40"
@@ -143,15 +143,15 @@ export default function App() {
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Browse your way</p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.035em] sm:text-4xl">Find something made nearby</h2>
           </div>
-          <a href="#featured" className="hidden items-center gap-2 text-sm font-bold text-primary sm:flex">
+          <Link to="/products" className="hidden items-center gap-2 text-sm font-bold text-primary sm:flex">
             View all categories <ArrowRight className="size-4" />
-          </a>
+          </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map(({ name, detail, icon: Icon }) => (
-            <a
+          {categories.map(({ name, slug, detail, icon: Icon }) => (
+            <Link
               key={name}
-              href="#featured"
+              to={`/products?category=${slug}`}
               className="group rounded-[1.4rem] border border-border bg-card p-5 shadow-[0_10px_30px_rgba(20,63,50,0.06)] transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_16px_36px_rgba(20,63,50,0.10)]"
             >
               <span className="grid size-11 place-items-center rounded-2xl bg-accent text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
@@ -159,7 +159,7 @@ export default function App() {
               </span>
               <h3 className="mt-6 text-lg font-bold">{name}</h3>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">{detail}</p>
-            </a>
+            </Link>
           ))}
         </div>
       </section>
@@ -170,9 +170,10 @@ export default function App() {
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Fresh from local makers</p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.035em] sm:text-4xl">A first look at the marketplace</h2>
             <p className="mt-3 text-base leading-7 text-muted-foreground">
-              Representative products for the first build slice. Live inventory, search and vendor data will follow from Neon.
+              Browse the live catalog for current prices and stock from approved vendors.
             </p>
           </div>
+          <Button className="mt-8" render={<Link to="/products" />}>Browse live catalog <ArrowRight /></Button>
           <div className="grid gap-5 md:grid-cols-3">
             {products.map((product) => (
               <article key={product.name} className="overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm">

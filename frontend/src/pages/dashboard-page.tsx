@@ -41,6 +41,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { apiRequest, type UserRole } from '@/lib/api';
+import { VendorProductsView } from '@/pages/vendor-products';
 
 type NavItem = {
   label: string;
@@ -66,7 +67,7 @@ const roleConfig: Record<
     eyebrow: 'Vendor',
     items: [
       { label: 'Overview', icon: Home, path: '/vendor' },
-      { label: 'Products', icon: Store },
+      { label: 'Products', icon: Store, path: '/vendor/products' },
       { label: 'Inventory', icon: Boxes },
       { label: 'Orders', icon: PackageCheck },
       { label: 'Analytics', icon: BarChart3 },
@@ -217,9 +218,9 @@ function CustomerOverview() {
       <section className="mt-6 rounded-2xl border bg-card p-6 shadow-sm">
         <h3 className="text-lg font-extrabold">Start exploring local products</h3>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          The catalog and checkout are the next customer features. Your account and secure session are ready now.
+          Browse the live catalog from approved Sri Lankan vendors. Checkout will be added in the next commerce slice.
         </p>
-        <Button className="mt-5" render={<Link to="/" />}>
+        <Button className="mt-5" render={<Link to="/products" />}>
           Browse marketplace
         </Button>
       </section>
@@ -482,11 +483,12 @@ function AdminOverview() {
   );
 }
 
-export function DashboardPage({ workspace }: { workspace: UserRole }) {
+export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' }) {
   return (
     <DashboardShell>
       {workspace === 'customer' && <CustomerOverview />}
-      {workspace === 'vendor' && <VendorOverview />}
+      {workspace === 'vendor' && view === 'overview' && <VendorOverview />}
+      {workspace === 'vendor' && view === 'products' && <VendorProductsView />}
       {workspace === 'admin' && <AdminOverview />}
     </DashboardShell>
   );
