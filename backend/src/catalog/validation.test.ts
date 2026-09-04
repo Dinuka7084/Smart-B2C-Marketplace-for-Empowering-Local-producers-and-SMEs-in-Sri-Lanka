@@ -7,6 +7,7 @@ import {
   productImageSchema,
   productInputSchema,
   inventoryUpdateSchema,
+  productDescriptionDraftSchema,
 } from './validation.ts';
 
 test('product input normalizes SKU and converts LKR to integer cents', () => {
@@ -68,4 +69,18 @@ test('inventory updates require nonnegative quantities and useful optional notes
   assert.equal(inventoryUpdateSchema.safeParse({ availableQuantity: 5, note: 'Restocked from Matale supplier.' }).success, true);
   assert.equal(inventoryUpdateSchema.safeParse({ availableQuantity: -1 }).success, false);
   assert.equal(inventoryUpdateSchema.safeParse({ availableQuantity: 5, note: 'x' }).success, false);
+});
+
+test('AI description briefs require useful product context', () => {
+  assert.equal(productDescriptionDraftSchema.safeParse({
+    productName: 'Ceylon Cinnamon Sticks',
+    categoryName: 'Spices',
+    keyFeatures: 'Hand-selected in Matale and packed in a reusable pouch.',
+    tone: 'traditional',
+  }).success, true);
+  assert.equal(productDescriptionDraftSchema.safeParse({
+    productName: 'Tea',
+    categoryName: 'Tea',
+    keyFeatures: 'Nice',
+  }).success, false);
 });

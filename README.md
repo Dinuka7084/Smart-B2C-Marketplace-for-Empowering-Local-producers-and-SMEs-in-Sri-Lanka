@@ -54,6 +54,8 @@ Approved vendors fulfil their child orders at `/vendor/orders`; customers can op
 
 Vendors manage stock and review its audit trail at `/vendor/inventory`. The vendor overview displays live product, fulfilment, low-stock, and delivered-revenue metrics. Inventory API rules are documented in `docs/INVENTORY_API.md`.
 
+The `/vendor/analytics` workspace reconciles 30-day sales performance from delivered orders. Product creation also includes an optional Groq drafting assistant; add `GROQ_API_KEY` to `backend/.env` to enable it. Analytics and AI behavior are documented in `docs/VENDOR_INSIGHTS_API.md`.
+
 Customers can save products at `/account/wishlist` and review order activity at `/account/notifications`. API ownership and event rules are documented in `docs/ENGAGEMENT_API.md`.
 
 Delivered purchases can be reviewed from product pages, while order complaints live at `/account/complaints`. Administrators moderate both workflows at `/admin/support`; rules are documented in `docs/SUPPORT_API.md`.

@@ -115,6 +115,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/vendor/analytics"
+        element={
+          <ProtectedRoute roles={['vendor']}>
+            <DashboardPage workspace="vendor" view="analytics" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin"
         element={
           <ProtectedRoute roles={['admin']}>

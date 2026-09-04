@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   AlertCircle,
   BarChart3,
@@ -60,6 +60,8 @@ import { VendorOrdersView } from '@/pages/vendor-orders';
 import { VendorInventoryView } from '@/pages/vendor-inventory';
 import { VendorProductsView } from '@/pages/vendor-products';
 
+const VendorAnalyticsView = lazy(() => import('@/pages/vendor-analytics').then((module) => ({ default: module.VendorAnalyticsView })));
+
 type NavItem = {
   label: string;
   icon: LucideIcon;
@@ -89,7 +91,7 @@ const roleConfig: Record<
       { label: 'Products', icon: Store, path: '/vendor/products' },
       { label: 'Inventory', icon: Boxes, path: '/vendor/inventory' },
       { label: 'Orders', icon: PackageCheck, path: '/vendor/orders' },
-      { label: 'Analytics', icon: BarChart3 },
+      { label: 'Analytics', icon: BarChart3, path: '/vendor/analytics' },
     ],
   },
   admin: {
@@ -518,7 +520,7 @@ function AdminOverview() {
   );
 }
 
-export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'inventory' | 'orders' | 'order-detail' | 'wishlist' | 'notifications' | 'complaints' | 'support' | 'categories' | 'users' | 'admin-products' }) {
+export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'inventory' | 'orders' | 'analytics' | 'order-detail' | 'wishlist' | 'notifications' | 'complaints' | 'support' | 'categories' | 'users' | 'admin-products' }) {
   return (
     <DashboardShell>
       {workspace === 'customer' && view === 'overview' && <CustomerOverview />}
@@ -531,6 +533,7 @@ export function DashboardPage({ workspace, view = 'overview' }: { workspace: Use
       {workspace === 'vendor' && view === 'products' && <VendorProductsView />}
       {workspace === 'vendor' && view === 'inventory' && <VendorInventoryView />}
       {workspace === 'vendor' && view === 'orders' && <VendorOrdersView />}
+      {workspace === 'vendor' && view === 'analytics' && <Suspense fallback={<div className="flex min-h-80 items-center justify-center gap-3 text-muted-foreground"><Spinner /> Loading analytics workspace…</div>}><VendorAnalyticsView /></Suspense>}
       {workspace === 'admin' && view === 'overview' && <AdminOverview />}
       {workspace === 'admin' && view === 'support' && <AdminSupportView />}
       {workspace === 'admin' && view === 'categories' && <AdminCategoriesView />}

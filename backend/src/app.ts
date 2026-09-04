@@ -11,6 +11,7 @@ import { customerEngagementRouter } from './routes/customer-engagement.routes.ts
 import { catalogRouter } from './routes/catalog.routes.ts';
 import { vendorCatalogRouter } from './routes/vendor-catalog.routes.ts';
 import { vendorOrdersRouter } from './routes/vendor-orders.routes.ts';
+import { vendorInsightsRouter } from './routes/vendor-insights.routes.ts';
 
 export const app = express();
 
@@ -52,6 +53,7 @@ app.use('/api/v1', customerCommerceRouter);
 app.use('/api/v1', customerEngagementRouter);
 app.use('/api/v1/vendor', vendorCatalogRouter);
 app.use('/api/v1/vendor', vendorOrdersRouter);
+app.use('/api/v1/vendor', vendorInsightsRouter);
 
 app.use((request, response) => {
   response.status(404).json({

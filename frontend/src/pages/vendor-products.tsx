@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type SyntheticEvent } from 'react';
-import { AlertCircle, Check, ImagePlus, PackagePlus, RefreshCw } from 'lucide-react';
+import { AlertCircle, Check, ImagePlus, PackagePlus, RefreshCw, Sparkles } from 'lucide-react';
 
 import { useAuth } from '@/auth/auth-context';
 import { type Category, formatPrice, type VendorProduct } from '@/catalog/types';
@@ -60,6 +60,9 @@ export function VendorProductsView() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [descriptionBrief, setDescriptionBrief] = useState('');
+  const [descriptionTone, setDescriptionTone] = useState<'warm' | 'professional' | 'traditional'>('warm');
+  const [generating, setGenerating] = useState(false);
 
   const loadProducts = useCallback(async () => {
     const data = await apiRequest<{ products: VendorProduct[] }>('/vendor/products');
@@ -97,6 +100,25 @@ export function VendorProductsView() {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'The product could not be created.');
     } finally { setSaving(false); }
+  };
+
+  const generateDescription = async () => {
+    const categoryName = categories.find((category) => category.id === form.categoryId)?.name;
+    if (!form.name.trim() || !categoryName || descriptionBrief.trim().length < 10) {
+      setError('Add a product name, category, and at least 10 characters of key product details first.');
+      return;
+    }
+    setGenerating(true); setError(null); setMessage(null);
+    try {
+      const result = await apiRequest<{ draft: { description: string; model: string } }>('/vendor/ai/product-description', {
+        method: 'POST',
+        body: JSON.stringify({ productName: form.name, categoryName, keyFeatures: descriptionBrief, tone: descriptionTone }),
+      });
+      setField('description', result.draft.description);
+      setMessage('AI draft added. Review and edit it before creating the product.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'The AI draft could not be generated. You can continue writing manually.');
+    } finally { setGenerating(false); }
   };
 
   const updateStock = async (product: VendorProduct) => {
@@ -170,7 +192,8 @@ export function VendorProductsView() {
           <div className="grid gap-2"><Label htmlFor="product-status">Status</Label><NativeSelect id="product-status" className="w-full" value={form.status} onChange={(e) => setField('status', e.target.value as ProductForm['status'])}><NativeSelectOption value="draft">Draft</NativeSelectOption><NativeSelectOption value="published">Published</NativeSelectOption></NativeSelect></div>
           <div className="grid gap-2"><Label htmlFor="product-stock">Available stock</Label><Input id="product-stock" required type="number" min="0" step="1" value={form.stock} onChange={(e) => setField('stock', e.target.value)} /></div>
           <div className="grid gap-2"><Label htmlFor="low-stock">Low-stock warning</Label><Input id="low-stock" required type="number" min="0" step="1" value={form.lowStockThreshold} onChange={(e) => setField('lowStockThreshold', e.target.value)} /></div>
-          <div className="grid gap-2 md:col-span-2"><Label htmlFor="product-description">Description</Label><textarea id="product-description" required minLength={20} maxLength={5000} rows={4} value={form.description} onChange={(e) => setField('description', e.target.value)} className="rounded-lg border bg-background px-3 py-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" /></div>
+          <div className="grid gap-4 rounded-xl border bg-muted/35 p-4 md:col-span-2"><div className="flex items-center gap-2"><Sparkles className="size-4 text-primary" /><div><p className="font-bold">AI description assistant</p><p className="text-sm text-muted-foreground">Optional—your final description always remains editable.</p></div></div><div className="grid gap-3 md:grid-cols-[1fr_12rem_auto]"><div className="grid gap-2"><Label htmlFor="description-brief">Key features, materials, or origin</Label><Input id="description-brief" minLength={10} maxLength={1000} placeholder="Example: Handwoven cotton, made in Kandy, reusable…" value={descriptionBrief} onChange={(e) => setDescriptionBrief(e.target.value)} /></div><div className="grid gap-2"><Label htmlFor="description-tone">Writing tone</Label><NativeSelect id="description-tone" className="w-full" value={descriptionTone} onChange={(e) => setDescriptionTone(e.target.value as typeof descriptionTone)}><NativeSelectOption value="warm">Warm</NativeSelectOption><NativeSelectOption value="professional">Professional</NativeSelectOption><NativeSelectOption value="traditional">Traditional</NativeSelectOption></NativeSelect></div><Button type="button" className="self-end" variant="outline" disabled={generating || descriptionBrief.trim().length < 10 || !form.name || !form.categoryId} onClick={() => void generateDescription()}>{generating ? <Spinner /> : <Sparkles />} Draft with Groq</Button></div></div>
+          <div className="grid gap-2 md:col-span-2"><Label htmlFor="product-description">Description</Label><textarea id="product-description" required minLength={20} maxLength={5000} rows={5} value={form.description} onChange={(e) => setField('description', e.target.value)} className="rounded-lg border bg-background px-3 py-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" /><p className="text-xs text-muted-foreground">Check all claims for accuracy before publishing.</p></div>
           <div className="md:col-span-2"><Button type="submit" disabled={saving || categories.length === 0}>{saving ? <Spinner /> : <PackagePlus />} Create product</Button></div>
         </form>
       </section>

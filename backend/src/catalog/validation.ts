@@ -41,6 +41,14 @@ export const inventoryUpdateSchema = z.object({
   note: z.string().trim().min(3).max(500).optional(),
 });
 
+export const productDescriptionDraftSchema = z.object({
+  productName: z.string().trim().min(3).max(180),
+  categoryName: z.string().trim().min(2).max(120),
+  keyFeatures: z.string().trim().min(10).max(1_000),
+  audience: z.string().trim().min(3).max(200).optional(),
+  tone: z.enum(['warm', 'professional', 'traditional']).default('warm'),
+});
+
 export const productImageSchema = z.object({
   imageUrl: z.url().refine((value) => {
     const url = new URL(value);

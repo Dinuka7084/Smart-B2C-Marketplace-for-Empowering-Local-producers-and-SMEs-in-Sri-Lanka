@@ -279,4 +279,13 @@ The vendor inventory and operational dashboard slice is implemented:
 - The inventory workspace highlights low-stock products and presents the latest 100 movement events.
 - Vendor dashboard metrics now report published products, active fulfilment work, low-stock products, and delivered-order revenue.
 
-The next slice adds vendor sales analytics and Groq-assisted product-description drafting.
+The vendor insights and AI content slice is implemented:
+
+- A protected vendor analytics endpoint reconciles a rolling 30-day summary directly from delivered order records.
+- Daily delivered revenue, current order-status counts, and the five best-selling products are available in a responsive analytics workspace.
+- The analytics route is loaded on demand so its charting library does not increase the initial marketplace bundle.
+- Approved vendors can request a Groq-generated product-description draft using product facts and a selected writing tone.
+- Groq credentials remain in the Express environment; generated text is editable and the manual description workflow remains available when AI is unconfigured or unavailable.
+- AI prompts prohibit invented certifications, health claims, discounts, origins, and unsupported product features.
+
+The next slice adds the recommendation baseline and vendor learning resources.
