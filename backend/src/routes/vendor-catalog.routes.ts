@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { and, desc, eq } from 'drizzle-orm';
 import { Router } from 'express';
+import multer from 'multer';
 import { z } from 'zod';
 
 import {
@@ -166,6 +169,7 @@ vendorCatalogRouter.post('/products', async (request, response) => {
         description: input.description,
         priceCents: priceLkrToCents(input.priceLkr),
         status: input.status,
+        imageUrl: input.imageUrl ?? null,
         publishedAt: input.status === 'published' ? new Date() : null,
       });
     const inventoryInsert = db.insert(inventory).values({
@@ -197,6 +201,81 @@ vendorCatalogRouter.post('/products', async (request, response) => {
   response.status(201).json({ product: { id: productId } });
 });
 
+const uploadsProductDir = path.resolve(process.cwd(), 'uploads', 'products');
+if (!fs.existsSync(uploadsProductDir)) {
+  fs.mkdirSync(uploadsProductDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadsProductDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    const uniqueSuffix = `${Date.now()}-${randomUUID()}${ext}`;
+    cb(null, `product-${uniqueSuffix}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new AppError('Only JPG, PNG, and WebP images are allowed.', 400, 'INVALID_FILE_TYPE'));
+    }
+  },
+});
+
+vendorCatalogRouter.post(
+  '/products/:productId/image-upload',
+  (request, response, next) => {
+    upload.single('file')(request, response, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return next(new AppError('Product image must be 10 MB or smaller.', 400, 'FILE_TOO_LARGE'));
+        }
+        return next(new AppError(err.message, 400, 'UPLOAD_ERROR'));
+      }
+      if (err) return next(err);
+      next();
+    });
+  },
+  async (request, response) => {
+    const productId = productIdFrom(request.params.productId);
+    const auth = response.locals.auth as AuthContext;
+    const vendorId = await getVendorProfileId(auth);
+    await assertOwnedProduct(productId, vendorId);
+
+    if (!request.file) {
+      throw new AppError('Choose a JPG, PNG, or WebP image to upload.', 400, 'MISSING_FILE');
+    }
+
+    const host = request.get('host') ?? 'localhost:4000';
+    const protocol = request.protocol;
+    const imageUrl = `${protocol}://${host}/uploads/products/${request.file.filename}`;
+
+    await getDb()
+      .update(products)
+      .set({
+        imageUrl,
+        imagePublicId: request.file.filename,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(products.id, productId), eq(products.vendorId, vendorId)));
+
+    response.json({
+      product: {
+        id: productId,
+        imageUrl,
+      },
+    });
+  },
+);
+
 vendorCatalogRouter.post(
   '/products/:productId/image-upload-signature',
   async (request, response) => {
@@ -208,7 +287,7 @@ vendorCatalogRouter.post(
     const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = env;
     if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
       throw new AppError(
-        'Product image uploads are not configured yet.',
+        'Product image uploads are managed directly on this server. Cloudinary is not required.',
         503,
         'CLOUDINARY_NOT_CONFIGURED',
       );
@@ -253,28 +332,11 @@ vendorCatalogRouter.patch(
     const vendorId = await getVendorProfileId(auth);
     await assertOwnedProduct(productId, vendorId);
 
-    const expectedPublicIdPrefix = `smart-lanka/products/${vendorId}/`;
-    const expectedUrlPrefix = env.CLOUDINARY_CLOUD_NAME
-      ? `/${env.CLOUDINARY_CLOUD_NAME}/image/upload/`
-      : null;
-    const imageUrl = new URL(parsed.data.imageUrl);
-    if (
-      !parsed.data.imagePublicId.startsWith(expectedPublicIdPrefix) ||
-      !expectedUrlPrefix ||
-      !imageUrl.pathname.startsWith(expectedUrlPrefix)
-    ) {
-      throw new AppError(
-        'The uploaded image does not belong to this vendor.',
-        400,
-        'INVALID_PRODUCT_IMAGE',
-      );
-    }
-
     await getDb()
       .update(products)
       .set({
         imageUrl: parsed.data.imageUrl,
-        imagePublicId: parsed.data.imagePublicId,
+        imagePublicId: parsed.data.imagePublicId ?? null,
         updatedAt: new Date(),
       })
       .where(and(eq(products.id, productId), eq(products.vendorId, vendorId)));

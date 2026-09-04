@@ -25,3 +25,4 @@
 - Demand forecasting and dynamic pricing require enough historical order data to produce defensible outputs.
 - Automated vendor ranking will not be activated until ranking factors and weights are agreed and visible to administrators.
 - Refund, cancellation, commission, delivery-fee, and tax rules will be finalized with the checkout milestone.
+- The vendor learning hub is not required for the agreed application scope.

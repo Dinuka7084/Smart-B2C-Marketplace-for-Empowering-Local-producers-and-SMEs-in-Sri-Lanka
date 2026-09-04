@@ -1,18 +1,22 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 
 import App from './App';
 import { ProtectedRoute } from './auth/protected-route';
-import { AuthPage } from './pages/auth-page';
-import { CartPage } from './pages/cart-page';
-import { CheckoutPage } from './pages/checkout-page';
-import { DashboardPage } from './pages/dashboard-page';
-import { NotFoundPage } from './pages/not-found-page';
-import { ProductDetailPage } from './pages/product-detail-page';
-import { ProductsPage } from './pages/products-page';
+
+const AuthPage = lazy(() => import('./pages/auth-page').then((module) => ({ default: module.AuthPage })));
+const CartPage = lazy(() => import('./pages/cart-page').then((module) => ({ default: module.CartPage })));
+const CheckoutPage = lazy(() => import('./pages/checkout-page').then((module) => ({ default: module.CheckoutPage })));
+const DashboardPage = lazy(() => import('./pages/dashboard-page').then((module) => ({ default: module.DashboardPage })));
+const NotFoundPage = lazy(() => import('./pages/not-found-page').then((module) => ({ default: module.NotFoundPage })));
+const ProductDetailPage = lazy(() => import('./pages/product-detail-page').then((module) => ({ default: module.ProductDetailPage })));
+const ProductsPage = lazy(() => import('./pages/products-page').then((module) => ({ default: module.ProductsPage })));
+
+const RouteFallback = () => <main id="main-content" aria-live="polite" className="grid min-h-screen place-items-center bg-background text-muted-foreground">Loading Smart Lanka…</main>;
 
 export function AppRouter() {
   return (
-    <Routes>
+    <Suspense fallback={<RouteFallback />}><Routes>
       <Route path="/" element={<App />} />
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/register" element={<AuthPage mode="register" />} />
@@ -164,6 +168,6 @@ export function AppRouter() {
       />
       <Route path="/home" element={<Navigate to="/" replace />} />
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    </Routes></Suspense>
   );
 }

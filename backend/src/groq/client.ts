@@ -69,6 +69,25 @@ export const generateProductDescription = async (
   }
 
   if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`Groq API request failed [${response.status}]:`, errorBody);
+
+    if (response.status === 401 || response.status === 403) {
+      throw new AppError(
+        'Groq API key is invalid or expired. Please update GROQ_API_KEY in backend/.env with a valid key from console.groq.com.',
+        502,
+        'GROQ_AUTH_FAILED',
+      );
+    }
+
+    if (response.status === 404) {
+      throw new AppError(
+        `The configured Groq model (${env.GROQ_MODEL}) was not found or is no longer supported. Please update GROQ_MODEL in backend/.env.`,
+        502,
+        'GROQ_MODEL_NOT_FOUND',
+      );
+    }
+
     throw new AppError(
       response.status === 429
         ? 'The AI drafting limit has been reached. Try again shortly or write the description manually.'

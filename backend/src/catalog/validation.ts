@@ -26,6 +26,7 @@ export const productInputSchema = z.object({
   status: z.enum(['draft', 'published']).default('draft'),
   stock: z.coerce.number().int().min(0).max(1_000_000).default(0),
   lowStockThreshold: z.coerce.number().int().min(0).max(100_000).default(5),
+  imageUrl: z.string().trim().optional(),
 });
 
 export const productUpdateSchema = productInputSchema
@@ -50,11 +51,19 @@ export const productDescriptionDraftSchema = z.object({
 });
 
 export const productImageSchema = z.object({
-  imageUrl: z.url().refine((value) => {
-    const url = new URL(value);
-    return url.protocol === 'https:' && url.hostname === 'res.cloudinary.com';
-  }, 'Use a secure Cloudinary image URL'),
-  imagePublicId: z.string().trim().min(1).max(255),
+  imageUrl: z.union([
+    z.null(),
+    z.string().trim().refine((value) => {
+      if (value.startsWith('/uploads/')) return true;
+      try {
+        const url = new URL(value);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }, 'Provide a valid image URL'),
+  ]),
+  imagePublicId: z.string().trim().max(255).optional().nullable(),
 });
 
 export const catalogQuerySchema = z.object({

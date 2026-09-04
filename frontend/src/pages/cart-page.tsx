@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, ArrowLeft, Leaf, PackageCheck, ShoppingBag, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, PackageCheck, ShoppingBag, Trash2 } from 'lucide-react';
 import { Link } from 'react-router';
 
 import type { Cart } from '@/cart/types';
 import { formatPrice } from '@/catalog/types';
+import { BrandMark } from '@/components/brand-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -62,11 +64,14 @@ export function CartPage() {
   };
 
   return (
-    <main className="min-h-screen bg-muted/35">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-muted/35 outline-none">
       <header className="border-b bg-background">
         <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-5 lg:px-8">
-          <Link to="/" className="flex items-center gap-3 font-extrabold tracking-[-0.03em]"><span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground"><Leaf className="size-5" /></span>Smart Lanka</Link>
-          <Button className="ml-auto" variant="outline" render={<Link to="/account" />}>My account</Button>
+          <Link to="/" aria-label="Smart Lanka home"><BrandMark markClassName="size-10" textClassName="tracking-[-0.03em]" /></Link>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle className="size-10 rounded-full" />
+            <Button variant="outline" render={<Link to="/account" />}>My account</Button>
+          </div>
         </div>
       </header>
 

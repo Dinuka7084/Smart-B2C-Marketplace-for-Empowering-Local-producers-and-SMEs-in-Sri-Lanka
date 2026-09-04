@@ -1,10 +1,12 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
-import { ArrowLeft, CheckCircle2, CreditCard, Leaf, MapPin, PackageCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CreditCard, MapPin, PackageCheck } from 'lucide-react';
 import { Link } from 'react-router';
 
 import type { Cart } from '@/cart/types';
 import { formatPrice } from '@/catalog/types';
 import type { Address, OrderSummary } from '@/checkout/types';
+import { BrandMark } from '@/components/brand-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -90,7 +92,7 @@ export function CheckoutPage() {
 
   if (order) {
     return (
-      <main className="grid min-h-screen place-items-center bg-muted/35 px-5 py-10">
+      <main id="main-content" tabIndex={-1} className="grid min-h-screen place-items-center bg-muted/35 px-5 py-10 outline-none">
         <section className="w-full max-w-2xl rounded-3xl border bg-card p-8 text-center shadow-sm sm:p-12">
           <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-primary/10 text-primary"><CheckCircle2 className="size-9" /></span>
           <Badge className="mt-6" variant="outline">Payment successful</Badge>
@@ -105,8 +107,17 @@ export function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-muted/35">
-      <header className="border-b bg-background"><div className="mx-auto flex h-20 max-w-7xl items-center px-5 lg:px-8"><Link to="/" className="flex items-center gap-3 font-extrabold tracking-[-0.03em]"><span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground"><Leaf className="size-5" /></span>Smart Lanka</Link></div></header>
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-muted/35 outline-none">
+      <header className="border-b bg-background">
+        <div className="mx-auto flex h-20 max-w-7xl items-center px-5 lg:px-8">
+          <Link to="/" aria-label="Smart Lanka home">
+            <BrandMark markClassName="size-10" textClassName="tracking-[-0.03em]" />
+          </Link>
+          <div className="ml-auto">
+            <ThemeToggle className="size-10 rounded-full" />
+          </div>
+        </div>
+      </header>
       <div className="mx-auto max-w-7xl px-5 py-8 lg:px-8 lg:py-12">
         <Button variant="ghost" render={<Link to="/cart" />}><ArrowLeft /> Back to cart</Button>
         <div className="mt-5"><p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Secure academic flow</p><h1 className="mt-2 text-4xl font-extrabold tracking-[-0.045em]">Checkout</h1></div>

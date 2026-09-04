@@ -56,6 +56,12 @@ Vendors manage stock and review its audit trail at `/vendor/inventory`. The vend
 
 The `/vendor/analytics` workspace reconciles 30-day sales performance from delivered orders. Product creation also includes an optional Groq drafting assistant; add `GROQ_API_KEY` to `backend/.env` to enable it. Analytics and AI behavior are documented in `docs/VENDOR_INSIGHTS_API.md`.
 
+Signed-in customers receive explainable product recommendations above the searchable catalog. The deterministic ranking and eligibility rules are documented in `docs/RECOMMENDATIONS_API.md`.
+
+The API applies browser-origin checks, security headers, private response caching rules, request identifiers, and rate limits for sensitive authentication and AI routes. The frontend includes skip navigation, reduced-motion behavior, and route-level code splitting. Release controls are documented in `docs/SECURITY_AND_RELEASE.md`.
+
+Release tooling includes environment validation, non-destructive API smoke checks, an optional idempotent presentation-data seed, and an explicitly enabled disposable transactional scenario. Usage is documented in `docs/DEMO_AND_SMOKE.md` and `docs/TRANSACTIONAL_E2E.md`; platform-neutral deployment and Neon recovery procedures are in `docs/DEPLOYMENT_AND_BACKUP.md`.
+
 Customers can save products at `/account/wishlist` and review order activity at `/account/notifications`. API ownership and event rules are documented in `docs/ENGAGEMENT_API.md`.
 
 Delivered purchases can be reviewed from product pages, while order complaints live at `/account/complaints`. Administrators moderate both workflows at `/admin/support`; rules are documented in `docs/SUPPORT_API.md`.
@@ -71,3 +77,4 @@ Run commands inside the relevant project folder:
 - Frontend: `npm run build`, `npm run typecheck`, and `npm run lint`.
 - Backend: `npm run build`, `npm run typecheck`, and `npm test`.
 - Backend database: `npm run db:generate`, `npm run db:migrate`, and `npm run db:seed`.
+- Release preparation: `npm run release:check-env`, `npm run release:smoke`, and, outside production only, `npm run db:seed:demo` and the guarded `npm run release:e2e`.

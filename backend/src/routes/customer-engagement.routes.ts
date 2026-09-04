@@ -2,7 +2,7 @@ import { and, count, desc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 
 import { requireAuth, requireRole, type AuthContext } from '../auth/middleware.ts';
-import { getDb } from '../db/client.ts';
+import { getDb, getSqlClient } from '../db/client.ts';
 import {
   categories,
   checkoutOrders,
@@ -20,10 +20,84 @@ import {
 import { engagementId, wishlistItemSchema } from '../engagement/validation.ts';
 import { AppError } from '../errors/app-error.ts';
 import { complaintInputSchema, reviewInputSchema } from '../support/validation.ts';
+import { explainRecommendation, recommendationStrategy } from '../recommendations/strategy.ts';
 
 export const customerEngagementRouter = Router();
 
 customerEngagementRouter.use(requireAuth, requireRole('customer'));
+
+customerEngagementRouter.get('/recommendations', async (_request, response) => {
+  const auth = response.locals.auth as AuthContext;
+  const rows = await getSqlClient()`
+    WITH category_affinity AS (
+      SELECT category_id, SUM(weight)::int AS affinity
+      FROM (
+        SELECT p.category_id, 3 AS weight
+        FROM wishlist_items wi
+        INNER JOIN wishlists w ON w.id = wi.wishlist_id
+        INNER JOIN products p ON p.id = wi.product_id
+        WHERE w.user_id = ${auth.userId}
+        UNION ALL
+        SELECT p.category_id, GREATEST(oi.quantity, 1) * 5 AS weight
+        FROM checkout_orders co
+        INNER JOIN vendor_orders vo ON vo.checkout_order_id = co.id
+        INNER JOIN order_items oi ON oi.vendor_order_id = vo.id
+        INNER JOIN products p ON p.id = oi.product_id
+        WHERE co.customer_id = ${auth.userId} AND vo.status <> 'cancelled'
+      ) signals
+      GROUP BY category_id
+    ), popularity AS (
+      SELECT oi.product_id, SUM(oi.quantity)::int AS units_sold
+      FROM order_items oi
+      INNER JOIN vendor_orders vo ON vo.id = oi.vendor_order_id
+      WHERE vo.status = 'delivered' AND vo.created_at >= CURRENT_DATE - INTERVAL '90 days'
+      GROUP BY oi.product_id
+    )
+    SELECT p.id, p.name, p.slug, p.description, p.price_cents, p.currency,
+      p.image_url, p.published_at, c.name AS category_name, c.slug AS category_slug,
+      v.business_name, v.store_slug, i.available_quantity,
+      COALESCE(a.affinity, 0)::int AS category_affinity,
+      COALESCE(pop.units_sold, 0)::int AS recent_units_sold,
+      (p.published_at >= NOW() - INTERVAL '14 days') AS published_recently,
+      (COALESCE(a.affinity, 0) * 100 + LEAST(COALESCE(pop.units_sold, 0), 50) * 4 +
+        CASE WHEN p.published_at >= NOW() - INTERVAL '14 days' THEN 10 ELSE 0 END)::int AS score
+    FROM products p
+    INNER JOIN categories c ON c.id = p.category_id
+    INNER JOIN vendor_profiles v ON v.id = p.vendor_id
+    INNER JOIN inventory i ON i.product_id = p.id
+    LEFT JOIN category_affinity a ON a.category_id = p.category_id
+    LEFT JOIN popularity pop ON pop.product_id = p.id
+    WHERE p.status = 'published' AND c.is_active = TRUE
+      AND v.approval_status = 'approved' AND i.available_quantity > 0
+    ORDER BY score DESC, p.published_at DESC NULLS LAST, p.id
+    LIMIT 8
+  `;
+
+  const records = (Array.isArray(rows) ? rows : []) as Array<Record<string, string | number | boolean | null>>;
+  response.json({
+    recommendations: {
+      strategy: recommendationStrategy,
+      products: records.map((row) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        priceCents: row.price_cents,
+        currency: row.currency,
+        imageUrl: row.image_url,
+        publishedAt: row.published_at,
+        category: { name: row.category_name, slug: row.category_slug },
+        vendor: { businessName: row.business_name, storeSlug: row.store_slug },
+        availableQuantity: row.available_quantity,
+        reason: explainRecommendation({
+          categoryAffinity: Number(row.category_affinity),
+          recentUnitsSold: Number(row.recent_units_sold),
+          publishedRecently: Boolean(row.published_recently),
+        }, String(row.category_name)),
+      })),
+    },
+  });
+});
 
 customerEngagementRouter.get('/wishlist', async (_request, response) => {
   const auth = response.locals.auth as AuthContext;

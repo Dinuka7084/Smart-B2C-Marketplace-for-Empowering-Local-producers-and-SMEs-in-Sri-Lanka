@@ -1,8 +1,10 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
-import { ArrowLeft, ArrowRight, Leaf, PackageOpen, Search, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Compass, PackageOpen, Search, ShoppingBag } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { BrandMark } from '@/components/brand-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,19 +12,25 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Spinner } from '@/components/ui/spinner';
 import { formatPrice, type CatalogProduct, type Category } from '@/catalog/types';
 import { apiRequest } from '@/lib/api';
+import { useAuth } from '@/auth/auth-context';
 
 type CatalogResponse = {
   products: CatalogProduct[];
   pagination: { page: number; pageSize: number; total: number; totalPages: number };
 };
 
+type RecommendedProduct = CatalogProduct & { reason: string };
+
 export function ProductsPage() {
+  const { user, status: authStatus } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') ?? '');
   const [categories, setCategories] = useState<Category[]>([]);
   const [result, setResult] = useState<CatalogResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<RecommendedProduct[] | null>(null);
+  const [recommendationError, setRecommendationError] = useState<string | null>(null);
 
   const category = searchParams.get('category') ?? '';
   const sort = searchParams.get('sort') ?? 'newest';
@@ -33,6 +41,15 @@ export function ProductsPage() {
       .then((data) => setCategories(data.categories))
       .catch(() => setCategories([]));
   }, []);
+
+  useEffect(() => {
+    if (authStatus !== 'ready' || user?.role !== 'customer') return;
+    let active = true;
+    apiRequest<{ recommendations: { strategy: string; products: RecommendedProduct[] } }>('/recommendations')
+      .then((data) => { if (active) setRecommendations(data.recommendations.products); })
+      .catch((caught: unknown) => { if (active) setRecommendationError(caught instanceof Error ? caught.message : 'Recommendations are unavailable.'); });
+    return () => { active = false; };
+  }, [authStatus, user?.role]);
 
   useEffect(() => {
     let active = true;
@@ -65,14 +82,16 @@ export function ProductsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-muted/35">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-muted/35 outline-none">
       <header className="border-b bg-background">
         <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-5 lg:px-8">
           <Link to="/" className="flex items-center gap-3 font-extrabold tracking-[-0.03em]">
-            <span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground"><Leaf className="size-5" /></span>
-            Smart Lanka
+            <BrandMark markClassName="size-10" textClassName="tracking-[-0.03em]" />
           </Link>
-          <Button className="ml-auto rounded-full" variant="outline" size="icon-lg" aria-label="Shopping cart" render={<Link to="/cart" />}><ShoppingBag /></Button>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle className="rounded-full size-10" />
+            <Button className="rounded-full" variant="outline" size="icon-lg" aria-label="Shopping cart" render={<Link to="/cart" />}><ShoppingBag /></Button>
+          </div>
         </div>
       </header>
 
@@ -100,6 +119,8 @@ export function ProductsPage() {
             <NativeSelectOption value="price-desc">Price: high to low</NativeSelectOption>
           </NativeSelect>
         </div>
+
+        {user?.role === 'customer' && <section className="mt-8 rounded-2xl border bg-card p-5 shadow-sm sm:p-6"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary"><Compass className="size-5" /></span><div><h2 className="text-xl font-extrabold tracking-[-0.03em]">Picked for you</h2><p className="text-sm text-muted-foreground">Based on your saved products, orders, and marketplace activity.</p></div></div>{recommendationError ? <Alert variant="destructive" className="mt-5"><AlertTitle>Recommendations unavailable</AlertTitle><AlertDescription>{recommendationError}</AlertDescription></Alert> : recommendations === null ? <div className="mt-5 flex min-h-36 items-center justify-center gap-3 text-muted-foreground"><Spinner /> Finding relevant products…</div> : recommendations.length === 0 ? <div className="mt-5 grid min-h-36 place-items-center rounded-xl border border-dashed text-center text-sm text-muted-foreground">Recommendations will appear as products become available.</div> : <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{recommendations.slice(0, 4).map((product) => <article key={product.id} className="overflow-hidden rounded-xl border bg-background"><Link to={`/products/${product.slug}`} className="block aspect-[4/3] bg-accent">{product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-2xl font-black text-primary/45">{product.name.slice(0, 2).toUpperCase()}</div>}</Link><div className="p-4"><p className="text-xs font-semibold text-primary">{product.reason}</p><h3 className="mt-2 line-clamp-2 font-extrabold"><Link to={`/products/${product.slug}`} className="hover:text-primary">{product.name}</Link></h3><p className="mt-3 font-extrabold">{formatPrice(product.priceCents, product.currency)}</p></div></article>)}</div>}</section>}
 
         <div className="mt-8 flex items-baseline justify-between gap-4">
           <h2 className="text-2xl font-extrabold tracking-[-0.035em]">Catalog</h2>

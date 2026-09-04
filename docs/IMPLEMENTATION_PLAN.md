@@ -78,7 +78,6 @@ The initial release will be English-first, use Sri Lankan rupees (LKR), and use 
 - `notifications`: per-user notification type, payload, read state, and timestamp.
 - `complaints`: customer issue, related order/vendor, workflow status, and admin resolution.
 - `vendor_metric_snapshots` and `vendor_rankings`: transparent ranking inputs and computed score history.
-- `learning_resources`: admin-managed vendor learning content.
 - `ai_generation_logs`: feature, input reference, model/provider metadata, status, and accepted output.
 
 ## 5. Main routes and surfaces
@@ -102,7 +101,6 @@ The initial release will be English-first, use Sri Lankan rupees (LKR), and use 
 - `/vendor/orders` order queue, details, and valid status transitions
 - `/vendor/customers` order-linked customer summaries with privacy limits
 - `/vendor/analytics` sales, product, inventory, and review insights
-- `/vendor/learning` learning hub
 
 ### Administrator
 
@@ -153,7 +151,7 @@ The initial release will be English-first, use Sri Lankan rupees (LKR), and use 
 
 ### Milestone 6 - Analytics and smart features
 
-**Output:** vendor analytics, transparent vendor ranking, AI product-description assistant, recommendation baseline, and learning hub. Demand forecasting and pricing recommendations follow only if sufficient historical data exists.
+**Output:** vendor analytics, transparent vendor ranking, AI product-description assistant, and recommendation baseline. Demand forecasting and pricing recommendations follow only if sufficient historical data exists. The previously proposed learning hub is outside the agreed scope.
 
 **Acceptance:** analytics reconcile with orders; ranking factors are explainable; every AI workflow has loading, error, and non-AI fallback states.
 
@@ -288,4 +286,39 @@ The vendor insights and AI content slice is implemented:
 - Groq credentials remain in the Express environment; generated text is editable and the manual description workflow remains available when AI is unconfigured or unavailable.
 - AI prompts prohibit invented certifications, health claims, discounts, origins, and unsupported product features.
 
-The next slice adds the recommendation baseline and vendor learning resources.
+The customer recommendation baseline is implemented:
+
+- Signed-in customers receive up to eight available products ranked through an explainable, deterministic strategy.
+- Wishlist categories and prior purchases provide personal affinity signals; delivered sales and recent publication provide sensible cold-start fallbacks.
+- Every recommendation includes a plain-language reason, and the normal searchable catalog remains available when recommendation loading fails.
+- Only published, in-stock products from active categories and approved vendors are eligible.
+
+The vendor learning hub has been removed from scope by product decision. Automated vendor ranking remains deferred until its factors and weights are explicitly agreed. The next slice begins Milestone 7 hardening and release preparation.
+
+The first Milestone 7 hardening slice is implemented:
+
+- Cookie-authenticated writes require the configured frontend origin and reject cross-site browser requests.
+- API responses include defensive content, framing, referrer, permissions, and resource-policy headers; production also enables HSTS.
+- Authentication and authenticated API responses are marked private and non-cacheable, and error responses carry traceable request identifiers.
+- Authentication attempts and Groq generation requests have bounded per-process rate limits.
+- Keyboard users can skip directly to each route's main content, motion preferences are respected, and workspace content uses a main landmark.
+- Standalone routes and secondary dashboard views are loaded on demand, reducing initial production JavaScript from roughly 580 KB to 302 KB.
+
+The next release slice adds critical end-to-end tests, presentation-ready demo data, environment validation, and deployment/backup documentation.
+
+The release tooling and operations slice is implemented:
+
+- A release validator checks required Neon/session configuration, production HTTPS, placeholder secrets, and complete optional integration credentials without printing secret values.
+- An idempotent, explicitly invoked non-production seed creates a customer, approved vendor, delivery address, wishlist signal, and four cross-category products for demonstrations.
+- A non-destructive smoke runner verifies health, security headers, the API identity, public catalog, anonymous authorization boundaries, and optional customer/vendor/admin reads.
+- Deployment sequencing, rollback boundaries, secret handling, Neon logical backup, recovery, and restore-drill procedures are documented.
+- The demo seed has not been executed automatically; presentation data remains an explicit developer choice.
+
+The disposable transactional end-to-end slice is implemented:
+
+- An explicitly enabled, non-production runner validates registration, vendor approval, product publication, cart, simulated checkout, checkout idempotency, fulfilment, tracking, reviews, complaints, moderation, notifications, and logout through the real API.
+- Each run creates uniquely tagged administrator, vendor, customer, category, product, checkout, and engagement records against the configured Neon development branch.
+- Exact-record cleanup runs in a `finally` block and observes restrictive order, payment, review, and complaint foreign keys before removing temporary identities and catalog data.
+- The runner targets a local API by default and requires an additional explicit override for remote non-production targets.
+
+The remaining release work is final manual responsive/accessibility verification, a successful dependency audit when the npm registry is available, and hosting-specific configuration after a deployment provider is selected.

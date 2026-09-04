@@ -28,7 +28,7 @@ const envSchema = z.object({
   SEED_ADMIN_EMAIL: optionalString,
   SEED_ADMIN_PASSWORD: optionalString,
   GROQ_API_KEY: optionalString,
-  GROQ_MODEL: z.string().trim().min(1).default('llama-3.1-8b-instant'),
+  GROQ_MODEL: z.string().trim().min(1).default('openai/gpt-oss-20b'),
   CLOUDINARY_CLOUD_NAME: optionalString,
   CLOUDINARY_API_KEY: optionalString,
   CLOUDINARY_API_SECRET: optionalString,

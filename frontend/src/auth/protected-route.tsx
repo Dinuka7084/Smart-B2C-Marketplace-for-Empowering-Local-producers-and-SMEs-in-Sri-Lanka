@@ -18,7 +18,7 @@ export function ProtectedRoute({
 
   if (status === 'loading') {
     return (
-      <main className="grid min-h-screen place-items-center bg-background">
+      <main id="main-content" tabIndex={-1} className="grid min-h-screen place-items-center bg-background outline-none">
         <div className="flex items-center gap-3 text-muted-foreground">
           <Spinner className="size-5" /> Checking your session…
         </div>

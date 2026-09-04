@@ -7,8 +7,23 @@
       name="description"
       content="Discover products made by Sri Lankan producers and independent local businesses."
     />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/smart-lanka-logo.png" />
     <title>Smart Lanka | Sri Lankan local marketplace</title>
+    <script>
+      (function() {
+        try {
+          const stored = localStorage.getItem('smart-lanka-theme');
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (stored === 'dark' || (!stored && prefersDark) || (stored === 'system' && prefersDark)) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.style.colorScheme = 'dark';
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

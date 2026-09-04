@@ -12,10 +12,26 @@ import { catalogRouter } from './routes/catalog.routes.ts';
 import { vendorCatalogRouter } from './routes/vendor-catalog.routes.ts';
 import { vendorOrdersRouter } from './routes/vendor-orders.routes.ts';
 import { vendorInsightsRouter } from './routes/vendor-insights.routes.ts';
+import { applyApiSecurity } from './middleware/security.ts';
+
+import path from 'node:path';
 
 export const app = express();
 
+const uploadsDir = path.resolve(process.cwd(), 'uploads');
+
 app.disable('x-powered-by');
+if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
+app.use(applyApiSecurity);
+app.use(
+  '/uploads',
+  cors({ origin: env.FRONTEND_URL }),
+  (_request, response, next) => {
+    response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  },
+  express.static(uploadsDir),
+);
 app.use(
   '/api',
   cors({
@@ -49,25 +65,28 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/cart', cartRouter);
 app.use('/api/v1', catalogRouter);
-app.use('/api/v1', customerCommerceRouter);
-app.use('/api/v1', customerEngagementRouter);
 app.use('/api/v1/vendor', vendorCatalogRouter);
 app.use('/api/v1/vendor', vendorOrdersRouter);
 app.use('/api/v1/vendor', vendorInsightsRouter);
+app.use('/api/v1', customerCommerceRouter);
+app.use('/api/v1', customerEngagementRouter);
 
 app.use((request, response) => {
   response.status(404).json({
     error: 'Not found',
     path: request.path,
+    requestId: response.locals.requestId,
   });
 });
 
 const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
+  const requestId = response.locals.requestId as string | undefined;
   if (error instanceof AppError) {
     response.status(error.statusCode).json({
       error: {
         code: error.code,
         message: error.message,
+        ...(requestId ? { requestId } : {}),
         ...(error.details === undefined ? {} : { details: error.details }),
       },
     });
@@ -85,6 +104,7 @@ const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => 
       error: {
         code: 'MALFORMED_JSON',
         message: 'Request body contains invalid JSON.',
+        ...(requestId ? { requestId } : {}),
       },
     });
     return;
@@ -95,6 +115,7 @@ const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => 
     error: {
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Internal server error',
+      ...(requestId ? { requestId } : {}),
     },
   });
 };

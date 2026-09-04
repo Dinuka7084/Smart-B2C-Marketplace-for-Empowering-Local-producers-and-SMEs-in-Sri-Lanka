@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Heart, Leaf, PackageCheck, ShieldCheck, ShoppingBag, Star, Store } from 'lucide-react';
+import { ArrowLeft, Check, Heart, PackageCheck, ShieldCheck, ShoppingBag, Star, Store } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { useAuth } from '@/auth/auth-context';
 import { formatPrice, type CatalogProduct } from '@/catalog/types';
+import { BrandMark } from '@/components/brand-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -116,14 +118,16 @@ export function ProductDetailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-muted/35">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-muted/35 outline-none">
       <header className="border-b bg-background">
         <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-5 lg:px-8">
           <Link to="/" className="flex items-center gap-3 font-extrabold tracking-[-0.03em]">
-            <span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground"><Leaf className="size-5" /></span>
-            Smart Lanka
+            <BrandMark markClassName="size-10" textClassName="tracking-[-0.03em]" />
           </Link>
-          <Button className="ml-auto rounded-full" variant="outline" size="icon-lg" aria-label="Shopping cart" render={<Link to="/cart" />}><ShoppingBag /></Button>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle className="rounded-full size-10" />
+            <Button className="rounded-full" variant="outline" size="icon-lg" aria-label="Shopping cart" render={<Link to="/cart" />}><ShoppingBag /></Button>
+          </div>
         </div>
       </header>
 

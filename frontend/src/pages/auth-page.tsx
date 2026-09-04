@@ -3,7 +3,6 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
-  Leaf,
   LockKeyhole,
   Store,
   UserRound,
@@ -18,6 +17,8 @@ import {
 
 import { useAuth } from '@/auth/auth-context';
 import { dashboardPathFor } from '@/auth/paths';
+import { FullBrandLogo } from '@/components/brand-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -160,16 +161,13 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   };
 
   return (
-    <main className="grid min-h-screen bg-background lg:grid-cols-[minmax(0,0.88fr)_minmax(32rem,1.12fr)]">
+    <main id="main-content" tabIndex={-1} className="grid min-h-screen bg-background outline-none lg:grid-cols-[minmax(0,0.88fr)_minmax(32rem,1.12fr)]">
       <section className="relative hidden overflow-hidden bg-[#123b2f] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="absolute -right-36 -top-36 size-[30rem] rounded-full border-[5rem] border-white/5" />
         <div className="absolute -bottom-28 -left-24 size-80 rounded-full bg-[#f0bd45]/12 blur-2xl" />
 
-        <Link to="/" className="relative flex items-center gap-3 font-extrabold">
-          <span className="grid size-11 place-items-center rounded-2xl bg-[#f0bd45] text-[#123b2f]">
-            <Leaf className="size-5" />
-          </span>
-          Smart Lanka
+        <Link to="/" className="relative w-fit rounded-3xl bg-white/95 p-1 shadow-lg shadow-black/10" aria-label="Smart Lanka home">
+          <FullBrandLogo className="size-32" />
         </Link>
 
         <div className="relative max-w-lg">
@@ -199,12 +197,15 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
       <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-10 lg:px-16">
         <div className="w-full max-w-xl">
-          <Link
-            to="/"
-            className="mb-9 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
-          >
-            <ArrowLeft className="size-4" /> Back to marketplace
-          </Link>
+          <div className="mb-9 flex items-center justify-between">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" /> Back to marketplace
+            </Link>
+            <ThemeToggle className="size-9 rounded-lg" />
+          </div>
 
           <div className="mb-8">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">

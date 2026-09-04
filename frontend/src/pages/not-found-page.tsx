@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export function NotFoundPage() {
   return (
-    <main className="grid min-h-screen place-items-center bg-background px-5 text-center">
+    <main id="main-content" tabIndex={-1} className="grid min-h-screen place-items-center bg-background px-5 text-center outline-none">
       <div className="max-w-md">
         <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground">
           <Leaf className="size-7" />

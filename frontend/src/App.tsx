@@ -13,6 +13,8 @@ import { Link } from 'react-router';
 
 import { useAuth } from '@/auth/auth-context';
 import { dashboardPathFor } from '@/auth/paths';
+import { BrandMark } from '@/components/brand-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -51,7 +53,7 @@ export default function App() {
   const { user } = useAuth();
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-background text-foreground outline-none">
       <div className="bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground">
         Discover goods made by Sri Lankan producers and growing local businesses.
       </div>
@@ -59,10 +61,7 @@ export default function App() {
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/95 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-7xl items-center gap-5 px-5 lg:px-8">
           <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="Smart Lanka home">
-            <span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-              <Leaf className="size-5" strokeWidth={2.4} />
-            </span>
-            <span className="text-lg font-extrabold tracking-[-0.04em]">Smart Lanka</span>
+            <BrandMark markClassName="size-10" textClassName="text-lg" />
           </Link>
 
           <nav className="ml-4 hidden items-center gap-7 text-sm font-semibold lg:flex" aria-label="Primary navigation">
@@ -80,6 +79,8 @@ export default function App() {
               aria-label="Search local products"
             />
           </form>
+
+          <ThemeToggle className="rounded-full size-10" />
 
           <Link
             className="hidden text-sm font-semibold sm:block"
@@ -209,12 +210,20 @@ export default function App() {
               Manage products, stock and orders in one place, understand what is selling, and grow with practical marketplace tools.
             </p>
           </div>
-          <div className="flex items-center justify-center border-t border-[#143f32]/15 bg-[#143f32] p-8 lg:border-l lg:border-t-0">
+          <div className="relative isolate flex min-h-64 items-center justify-center overflow-hidden border-t border-[#143f32]/15 bg-[#143f32] p-8 lg:min-h-0 lg:border-l lg:border-t-0">
+            <img
+              src="/vendor-craft-banner.png"
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
+            />
+            <div className="absolute inset-0 -z-10 bg-[#143f32]/72" aria-hidden="true" />
               <Link
                 to="/register?role=vendor"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-base font-bold text-[#143f32] transition hover:bg-[#f6f4ec] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
-            >
-              Become a vendor <ArrowRight className="size-4" />
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-base font-bold text-[#143f32] shadow-lg transition hover:bg-[#f6f4ec] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+              >
+                Become a vendor <ArrowRight className="size-4" />
               </Link>
           </div>
         </div>

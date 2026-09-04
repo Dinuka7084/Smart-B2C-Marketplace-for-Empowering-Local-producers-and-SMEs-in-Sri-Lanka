@@ -7,8 +7,11 @@ import { getDb, getSqlClient } from '../db/client.ts';
 import { vendorProfiles } from '../db/schema.ts';
 import { AppError } from '../errors/app-error.ts';
 import { generateProductDescription } from '../groq/client.ts';
+import { createRateLimiter } from '../middleware/rate-limit.ts';
 
 export const vendorInsightsRouter = Router();
+
+const aiRateLimiter = createRateLimiter({ limit: 5, windowMs: 60_000 });
 
 vendorInsightsRouter.use(requireAuth, requireRole('vendor'), requireApprovedVendor);
 
@@ -85,7 +88,7 @@ vendorInsightsRouter.get('/analytics', async (_request, response) => {
   });
 });
 
-vendorInsightsRouter.post('/ai/product-description', async (request, response) => {
+vendorInsightsRouter.post('/ai/product-description', aiRateLimiter, async (request, response) => {
   const parsed = productDescriptionDraftSchema.safeParse(request.body);
   if (!parsed.success) {
     throw new AppError('Provide enough product detail to create a useful draft.', 400, 'VALIDATION_ERROR', parsed.error.flatten().fieldErrors);

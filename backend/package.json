@@ -11,11 +11,16 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test --experimental-strip-types src/auth/password.test.ts src/auth/validation.test.ts src/admin/validation.test.ts src/catalog/validation.test.ts src/cloudinary/signature.test.ts src/cart/validation.test.ts src/checkout/validation.test.ts src/checkout/order-status.test.ts src/engagement/validation.test.ts src/support/validation.test.ts",
+    "test": "node --test --experimental-strip-types src/auth/password.test.ts src/auth/validation.test.ts src/admin/validation.test.ts src/catalog/validation.test.ts src/cloudinary/signature.test.ts src/cart/validation.test.ts src/checkout/validation.test.ts src/checkout/order-status.test.ts src/engagement/validation.test.ts src/support/validation.test.ts src/recommendations/strategy.test.ts src/middleware/security.test.ts src/release/config-validation.test.ts",
     "db:generate": "node scripts/run-drizzle-kit.cjs generate",
     "db:migrate": "node scripts/run-drizzle-kit.cjs migrate",
     "db:studio": "node scripts/run-drizzle-kit.cjs studio",
-    "db:seed": "node --experimental-strip-types src/db/seed.ts"
+    "db:seed": "node --experimental-strip-types src/db/seed.ts",
+    "db:seed:demo": "node --experimental-strip-types src/db/seed-demo.ts",
+    "release:check-env": "node --experimental-strip-types src/release/check-env.ts",
+    "release:check-env:production": "node --experimental-strip-types src/release/check-env.ts --production",
+    "release:smoke": "node --experimental-strip-types src/release/smoke.ts",
+    "release:e2e": "node --experimental-strip-types src/release/transactional-e2e.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
@@ -23,11 +28,13 @@
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.1.0",
+    "multer": "^2.3.0",
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/multer": "^2.2.0",
     "@types/node": "^22.18.6",
     "drizzle-kit": "^0.31.4",
     "typescript": "^5.9.2"

@@ -9,7 +9,6 @@ import {
   FolderTree,
   Heart,
   Home,
-  Leaf,
   LogOut,
   MessageSquareWarning,
   PackageCheck,
@@ -25,6 +24,8 @@ import { Link, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '@/auth/auth-context';
 import { formatPrice } from '@/catalog/types';
+import { BrandMark } from '@/components/brand-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -47,19 +48,18 @@ import {
 } from '@/components/ui/sidebar';
 import { apiRequest, type UserRole } from '@/lib/api';
 import type { VendorMetrics } from '@/inventory/types';
-import { AdminSupportView } from '@/pages/admin-support';
-import { AdminCategoriesView } from '@/pages/admin-categories';
-import { AdminProductsView } from '@/pages/admin-products';
-import { AdminUsersView } from '@/pages/admin-users';
-import { CustomerComplaintsView } from '@/pages/customer-complaints';
-import { CustomerOrderDetailView } from '@/pages/customer-order-detail';
-import { CustomerNotificationsView } from '@/pages/customer-notifications';
-import { CustomerOrdersView } from '@/pages/customer-orders';
-import { CustomerWishlistView } from '@/pages/customer-wishlist';
-import { VendorOrdersView } from '@/pages/vendor-orders';
-import { VendorInventoryView } from '@/pages/vendor-inventory';
-import { VendorProductsView } from '@/pages/vendor-products';
-
+const AdminSupportView = lazy(() => import('@/pages/admin-support').then((module) => ({ default: module.AdminSupportView })));
+const AdminCategoriesView = lazy(() => import('@/pages/admin-categories').then((module) => ({ default: module.AdminCategoriesView })));
+const AdminProductsView = lazy(() => import('@/pages/admin-products').then((module) => ({ default: module.AdminProductsView })));
+const AdminUsersView = lazy(() => import('@/pages/admin-users').then((module) => ({ default: module.AdminUsersView })));
+const CustomerComplaintsView = lazy(() => import('@/pages/customer-complaints').then((module) => ({ default: module.CustomerComplaintsView })));
+const CustomerOrderDetailView = lazy(() => import('@/pages/customer-order-detail').then((module) => ({ default: module.CustomerOrderDetailView })));
+const CustomerNotificationsView = lazy(() => import('@/pages/customer-notifications').then((module) => ({ default: module.CustomerNotificationsView })));
+const CustomerOrdersView = lazy(() => import('@/pages/customer-orders').then((module) => ({ default: module.CustomerOrdersView })));
+const CustomerWishlistView = lazy(() => import('@/pages/customer-wishlist').then((module) => ({ default: module.CustomerWishlistView })));
+const VendorOrdersView = lazy(() => import('@/pages/vendor-orders').then((module) => ({ default: module.VendorOrdersView })));
+const VendorInventoryView = lazy(() => import('@/pages/vendor-inventory').then((module) => ({ default: module.VendorInventoryView })));
+const VendorProductsView = lazy(() => import('@/pages/vendor-products').then((module) => ({ default: module.VendorProductsView })));
 const VendorAnalyticsView = lazy(() => import('@/pages/vendor-analytics').then((module) => ({ default: module.VendorAnalyticsView })));
 
 type NavItem = {
@@ -129,10 +129,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       <Sidebar collapsible="icon">
         <SidebarHeader className="border-b p-4">
           <Link to="/" className="flex items-center gap-3 overflow-hidden">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <Leaf className="size-4" />
-            </span>
-            <span className="truncate font-extrabold tracking-[-0.03em]">Smart Lanka</span>
+            <BrandMark markClassName="size-9 rounded-xl" textClassName="truncate tracking-[-0.03em]" />
           </Link>
         </SidebarHeader>
 
@@ -196,11 +193,14 @@ function DashboardShell({ children }: { children: ReactNode }) {
             <p className="truncate text-sm text-muted-foreground">{config.eyebrow}</p>
             <h1 className="truncate text-lg font-extrabold tracking-[-0.025em]">{config.label}</h1>
           </div>
-          <Button variant="outline" className="ml-auto hidden sm:inline-flex" render={<Link to="/" />}>
-            Marketplace
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle className="size-9 rounded-lg" />
+            <Button variant="outline" className="hidden sm:inline-flex" render={<Link to="/" />}>
+              Marketplace
+            </Button>
+          </div>
         </header>
-        <div className="flex-1 bg-muted/35 p-5 lg:p-8">{children}</div>
+        <main id="main-content" tabIndex={-1} className="flex-1 bg-muted/35 p-5 outline-none lg:p-8">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
@@ -523,6 +523,7 @@ function AdminOverview() {
 export function DashboardPage({ workspace, view = 'overview' }: { workspace: UserRole; view?: 'overview' | 'products' | 'inventory' | 'orders' | 'analytics' | 'order-detail' | 'wishlist' | 'notifications' | 'complaints' | 'support' | 'categories' | 'users' | 'admin-products' }) {
   return (
     <DashboardShell>
+      <Suspense fallback={<div aria-live="polite" className="flex min-h-80 items-center justify-center gap-3 text-muted-foreground"><Spinner /> Loading workspace…</div>}>
       {workspace === 'customer' && view === 'overview' && <CustomerOverview />}
       {workspace === 'customer' && view === 'orders' && <CustomerOrdersView />}
       {workspace === 'customer' && view === 'order-detail' && <CustomerOrderDetailView />}
@@ -533,12 +534,13 @@ export function DashboardPage({ workspace, view = 'overview' }: { workspace: Use
       {workspace === 'vendor' && view === 'products' && <VendorProductsView />}
       {workspace === 'vendor' && view === 'inventory' && <VendorInventoryView />}
       {workspace === 'vendor' && view === 'orders' && <VendorOrdersView />}
-      {workspace === 'vendor' && view === 'analytics' && <Suspense fallback={<div className="flex min-h-80 items-center justify-center gap-3 text-muted-foreground"><Spinner /> Loading analytics workspace…</div>}><VendorAnalyticsView /></Suspense>}
+      {workspace === 'vendor' && view === 'analytics' && <VendorAnalyticsView />}
       {workspace === 'admin' && view === 'overview' && <AdminOverview />}
       {workspace === 'admin' && view === 'support' && <AdminSupportView />}
       {workspace === 'admin' && view === 'categories' && <AdminCategoriesView />}
       {workspace === 'admin' && view === 'users' && <AdminUsersView />}
       {workspace === 'admin' && view === 'admin-products' && <AdminProductsView />}
+      </Suspense>
     </DashboardShell>
   );
 }

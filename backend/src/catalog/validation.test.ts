@@ -48,18 +48,23 @@ test('catalog query applies bounded pagination defaults', () => {
   });
 });
 
-test('product images must use secure Cloudinary delivery URLs', () => {
+test('product images accept valid delivery URLs and reject invalid strings', () => {
   assert.equal(
     productImageSchema.safeParse({
-      imageUrl: 'https://res.cloudinary.com/demo/image/upload/item.jpg',
-      imagePublicId: 'smart-lanka/products/vendor/item',
+      imageUrl: 'http://localhost:4000/uploads/products/item.jpg',
+      imagePublicId: 'item.jpg',
     }).success,
     true,
   );
   assert.equal(
     productImageSchema.safeParse({
       imageUrl: 'https://example.com/item.jpg',
-      imagePublicId: 'item',
+    }).success,
+    true,
+  );
+  assert.equal(
+    productImageSchema.safeParse({
+      imageUrl: 'not-a-valid-url',
     }).success,
     false,
   );
