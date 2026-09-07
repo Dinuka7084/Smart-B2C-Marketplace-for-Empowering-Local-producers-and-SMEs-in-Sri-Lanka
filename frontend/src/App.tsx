@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   Heart,
@@ -14,9 +15,13 @@ import { Link } from 'react-router';
 import { useAuth } from '@/auth/auth-context';
 import { dashboardPathFor } from '@/auth/paths';
 import { BrandMark } from '@/components/brand-logo';
+import { CartDrawer } from '@/components/cart-drawer';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatPrice, type CatalogProduct } from '@/catalog/types';
+import { apiRequest } from '@/lib/api';
 
 const categories = [
   { name: 'Spice & pantry', slug: 'spice-pantry', detail: 'Harvested close to home', icon: Leaf },
@@ -25,32 +30,30 @@ const categories = [
   { name: 'Wellness', slug: 'wellness', detail: 'Naturally considered', icon: Heart },
 ];
 
-const products = [
-  {
-    name: 'Ceylon cinnamon pantry set',
-    maker: 'Serendib Spice House · Matale',
-    price: 'LKR 3,450',
-    accent: 'bg-[#d56c2f]',
-    mark: 'CS',
-  },
-  {
-    name: 'Hand-thrown clay tea set',
-    maker: 'Mihikatha Studio · Kegalle',
-    price: 'LKR 5,900',
-    accent: 'bg-[#a85136]',
-    mark: 'CT',
-  },
-  {
-    name: 'Natural coconut soap trio',
-    maker: 'Sudu Pol · Kurunegala',
-    price: 'LKR 1,850',
-    accent: 'bg-[#9eaa75]',
-    mark: 'NS',
-  },
-];
-
 export default function App() {
   const { user } = useAuth();
+  const [featuredProducts, setFeaturedProducts] = useState<CatalogProduct[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [featuredError, setFeaturedError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    apiRequest<{ products: CatalogProduct[] }>('/products?page=1&pageSize=3&sort=newest')
+      .then((data) => {
+        if (active) setFeaturedProducts(data.products);
+      })
+      .catch(() => {
+        if (active) setFeaturedError(true);
+      })
+      .finally(() => {
+        if (active) setFeaturedLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <main id="main-content" tabIndex={-1} className="min-h-screen bg-background text-foreground outline-none">
@@ -88,9 +91,7 @@ export default function App() {
           >
             {user ? 'My workspace' : 'Sign in'}
           </Link>
-          <Button variant="outline" size="icon-lg" className="rounded-full" aria-label="Open shopping cart" render={<Link to="/cart" />}>
-            <ShoppingBag />
-          </Button>
+          <CartDrawer />
         </div>
       </header>
 
@@ -167,35 +168,63 @@ export default function App() {
 
       <section id="featured" className="border-y border-border bg-muted/45">
         <div className="mx-auto max-w-7xl px-5 py-14 lg:px-8 lg:py-20">
-          <div className="mb-8 max-w-2xl">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Fresh from local makers</p>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.035em] sm:text-4xl">A first look at the marketplace</h2>
-            <p className="mt-3 text-base leading-7 text-muted-foreground">
-              Browse the live catalog for current prices and stock from approved vendors.
-            </p>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
+            <div className="max-w-2xl">
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Fresh from local makers</p>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.035em] sm:text-4xl">Newest in the marketplace</h2>
+              <p className="mt-3 text-base leading-7 text-muted-foreground">
+                Recently published products from approved Sri Lankan vendors.
+              </p>
+            </div>
+            <Button render={<Link to="/products" />}>Browse live catalog <ArrowRight /></Button>
           </div>
-          <Button className="mt-8" render={<Link to="/products" />}>Browse live catalog <ArrowRight /></Button>
-          <div className="grid gap-5 md:grid-cols-3">
-            {products.map((product) => (
-              <article key={product.name} className="overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm">
-                <div className={`${product.accent} grid aspect-[4/3] place-items-center text-white`}>
-                  <span className="grid size-24 place-items-center rounded-full border border-white/40 bg-white/12 text-3xl font-black tracking-[-0.08em] backdrop-blur-sm">
-                    {product.mark}
-                  </span>
+          {featuredLoading ? (
+            <div className="grid gap-5 md:grid-cols-3" aria-label="Loading newest products">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm">
+                  <Skeleton className="aspect-[4/3] rounded-none" />
+                  <div className="space-y-3 p-5"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-6 w-4/5" /><Skeleton className="h-5 w-1/3" /></div>
                 </div>
-                <div className="p-5">
-                  <p className="text-sm leading-6 text-muted-foreground">{product.maker}</p>
-                  <h3 className="mt-1 text-lg font-bold leading-6">{product.name}</h3>
-                  <div className="mt-5 flex items-center justify-between gap-3">
-                    <span className="font-extrabold text-primary">{product.price}</span>
-                    <Button variant="outline" size="icon" className="rounded-full" aria-label={`Save ${product.name} to wishlist`}>
-                      <Heart />
-                    </Button>
+              ))}
+            </div>
+          ) : featuredError ? (
+            <output className="block rounded-[1.5rem] border border-dashed bg-card p-8 text-center">
+              <p className="font-bold">The newest products could not be loaded.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Open the catalogue to try again.</p>
+            </output>
+          ) : featuredProducts.length === 0 ? (
+            <output className="block rounded-[1.5rem] border border-dashed bg-card p-8 text-center">
+              <p className="font-bold">No published products yet</p>
+              <p className="mt-2 text-sm text-muted-foreground">New vendor listings will appear here after approval.</p>
+            </output>
+          ) : (
+            <div className="grid gap-5 md:grid-cols-3">
+              {featuredProducts.map((product) => (
+                <article key={product.id} className="overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm">
+                  <Link to={`/products/${product.slug}`} className="block aspect-[4/3] overflow-hidden bg-accent">
+                    {product.imageUrl ? (
+                      <img src={product.imageUrl} alt={product.name} loading="lazy" className="h-full w-full object-cover transition duration-300 hover:scale-[1.03]" />
+                    ) : (
+                      <span className="grid h-full place-items-center text-4xl font-black text-primary/45">{product.name.slice(0, 2).toUpperCase()}</span>
+                    )}
+                  </Link>
+                  <div className="p-5">
+                    <p className="text-sm leading-6 text-muted-foreground">{product.vendor.businessName} · {product.category.name}</p>
+                    <h3 className="mt-1 text-lg font-bold leading-6"><Link to={`/products/${product.slug}`} className="transition-colors hover:text-primary">{product.name}</Link></h3>
+                    <div className="mt-5 flex items-end justify-between gap-3">
+                      <div>
+                        <p className="font-extrabold text-primary">{formatPrice(product.priceCents, product.currency)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{product.availableQuantity > 0 ? `${product.availableQuantity} available` : 'Out of stock'}</p>
+                      </div>
+                      <Button variant="outline" size="icon" className="rounded-full" aria-label={`View ${product.name}`} render={<Link to={`/products/${product.slug}`} />}>
+                        <ArrowRight />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -218,7 +247,7 @@ export default function App() {
               decoding="async"
               className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
             />
-            <div className="absolute inset-0 -z-10 bg-[#143f32]/72" aria-hidden="true" />
+            <div className="absolute inset-0 -z-10 bg-[#143f32]/50" aria-hidden="true" />
               <Link
                 to="/register?role=vendor"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-base font-bold text-[#143f32] shadow-lg transition hover:bg-[#f6f4ec] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
@@ -229,10 +258,60 @@ export default function App() {
         </div>
       </section>
 
-      <footer className="border-t border-border bg-[#103229] text-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-8 text-sm sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <span className="font-bold">Smart Lanka <span className="font-normal text-white/65">· A marketplace for Sri Lankan enterprise</span></span>
-          <span className="text-white/60">Customer, vendor and administrator access is now available</span>
+      <footer className="border-t border-white/10 bg-[#103229] text-white">
+        <div className="mx-auto max-w-7xl px-5 pb-8 pt-12 lg:px-8 lg:pt-16">
+          <div className="grid gap-10 border-b border-white/12 pb-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_0.8fr_0.8fr_0.9fr] lg:gap-12">
+            <div className="max-w-sm">
+              <Link to="/" aria-label="Smart Lanka home">
+                <BrandMark markClassName="size-12" textClassName="text-xl text-white" />
+              </Link>
+              <p className="mt-5 text-sm leading-7 text-white/65">
+                A local marketplace connecting Sri Lankan producers and growing businesses with customers who value goods made close to home.
+              </p>
+            </div>
+
+            <nav aria-label="Marketplace footer navigation">
+              <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-[#f4c95d]">Marketplace</h2>
+              <ul className="mt-4 grid gap-3 text-sm text-white/70">
+                <li><Link className="transition-colors hover:text-white" to="/products">Shop all products</Link></li>
+                <li><a className="transition-colors hover:text-white" href="#categories">Browse categories</a></li>
+                <li><a className="transition-colors hover:text-white" href="#featured">Newest products</a></li>
+                <li><Link className="transition-colors hover:text-white" to="/cart">Shopping cart</Link></li>
+              </ul>
+            </nav>
+
+            <nav aria-label="Seller footer navigation">
+              <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-[#f4c95d]">For sellers</h2>
+              <ul className="mt-4 grid gap-3 text-sm text-white/70">
+                <li><a className="transition-colors hover:text-white" href="#for-producers">Seller benefits</a></li>
+                <li><Link className="transition-colors hover:text-white" to="/register?role=vendor">Become a vendor</Link></li>
+                <li><Link className="transition-colors hover:text-white" to="/login">Vendor sign in</Link></li>
+              </ul>
+            </nav>
+
+            <nav aria-label="Account footer navigation">
+              <h2 className="text-sm font-extrabold uppercase tracking-[0.14em] text-[#f4c95d]">Your account</h2>
+              <ul className="mt-4 grid gap-3 text-sm text-white/70">
+                {user ? (
+                  <>
+                    <li><Link className="transition-colors hover:text-white" to={dashboardPathFor(user)}>My workspace</Link></li>
+                    {user.role === 'customer' && <li><Link className="transition-colors hover:text-white" to="/account/orders">My orders</Link></li>}
+                    {user.role === 'customer' && <li><Link className="transition-colors hover:text-white" to="/account/complaints">Support & complaints</Link></li>}
+                  </>
+                ) : (
+                  <>
+                    <li><Link className="transition-colors hover:text-white" to="/login">Sign in</Link></li>
+                    <li><Link className="transition-colors hover:text-white" to="/register">Create customer account</Link></li>
+                  </>
+                )}
+              </ul>
+            </nav>
+          </div>
+
+          <div className="flex flex-col gap-3 pt-7 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {new Date().getFullYear()} Smart Lanka. Supporting Sri Lankan enterprise.</p>
+            <p>Customer, vendor and administrator access available.</p>
+          </div>
         </div>
       </footer>
     </main>

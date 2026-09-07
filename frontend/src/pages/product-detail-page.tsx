@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router';
 import { useAuth } from '@/auth/auth-context';
 import { formatPrice, type CatalogProduct } from '@/catalog/types';
 import { BrandMark } from '@/components/brand-logo';
+import { CartDrawer, notifyCartUpdated } from '@/components/cart-drawer';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -83,6 +84,7 @@ export function ProductDetailPage() {
         method: 'POST',
         body: JSON.stringify({ productId: product.id, quantity: Number(quantity) }),
       });
+      notifyCartUpdated();
       setAdded(true);
     } catch (caught) {
       setActionError(caught instanceof Error ? caught.message : 'This product could not be added to your cart.');
@@ -126,7 +128,7 @@ export function ProductDetailPage() {
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle className="rounded-full size-10" />
-            <Button className="rounded-full" variant="outline" size="icon-lg" aria-label="Shopping cart" render={<Link to="/cart" />}><ShoppingBag /></Button>
+            <CartDrawer />
           </div>
         </div>
       </header>

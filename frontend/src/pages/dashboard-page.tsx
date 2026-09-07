@@ -80,7 +80,7 @@ const roleConfig: Record<
       { label: 'Orders', icon: ShoppingBag, path: '/account/orders' },
       { label: 'Wishlist', icon: Heart, path: '/account/wishlist' },
       { label: 'Notifications', icon: Bell, path: '/account/notifications' },
-      { label: 'Complaints', icon: MessageSquareWarning, path: '/account/complaints' },
+      { label: 'Support & complaints', icon: MessageSquareWarning, path: '/account/complaints' },
     ],
   },
   vendor: {
@@ -244,9 +244,14 @@ function CustomerOverview() {
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           Browse the live catalog from approved Sri Lankan vendors. Checkout will be added in the next commerce slice.
         </p>
-        <Button className="mt-5" render={<Link to="/products" />}>
-          Browse marketplace
-        </Button>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Button render={<Link to="/products" />}>
+            Browse marketplace
+          </Button>
+          <Button variant="outline" render={<Link to="/account/complaints" />}>
+            <MessageSquareWarning /> Report an order issue
+          </Button>
+        </div>
       </section>
     </div>
   );

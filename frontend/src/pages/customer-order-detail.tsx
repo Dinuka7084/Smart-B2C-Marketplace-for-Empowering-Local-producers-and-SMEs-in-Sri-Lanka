@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ArrowLeft, Check, MapPin, PackageCheck } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, MapPin, MessageSquareWarning, PackageCheck } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { formatPrice } from '@/catalog/types';
@@ -53,7 +53,10 @@ export function CustomerOrderDetailView() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Button variant="ghost" className="mb-4" render={<Link to="/account/orders" />}><ArrowLeft /> Back to orders</Button>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Button variant="ghost" render={<Link to="/account/orders" />}><ArrowLeft /> Back to orders</Button>
+        <Button variant="outline" render={<Link to={`/account/complaints?order=${order.id}`} />}><MessageSquareWarning /> Report an issue</Button>
+      </div>
       <section className="rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div><p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Order tracking</p><h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em]">{order.reference}</h2><p className="mt-2 text-sm text-muted-foreground">Placed {dateFormat.format(new Date(order.createdAt))}</p></div>

@@ -1,9 +1,10 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
-import { ArrowLeft, ArrowRight, Compass, PackageOpen, Search, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Compass, PackageOpen, Search } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BrandMark } from '@/components/brand-logo';
+import { CartDrawer } from '@/components/cart-drawer';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -90,7 +91,7 @@ export function ProductsPage() {
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle className="rounded-full size-10" />
-            <Button className="rounded-full" variant="outline" size="icon-lg" aria-label="Shopping cart" render={<Link to="/cart" />}><ShoppingBag /></Button>
+            <CartDrawer />
           </div>
         </div>
       </header>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, MessageSquareWarning } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import type { OrderListItem } from '@/checkout/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -21,6 +21,8 @@ const statusClasses: Record<ComplaintStatus, string> = {
 };
 
 export function CustomerComplaintsView() {
+  const [searchParams] = useSearchParams();
+  const requestedOrderId = searchParams.get('order') ?? '';
   const [complaints, setComplaints] = useState<CustomerComplaint[]>([]);
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [orderId, setOrderId] = useState('');
@@ -40,12 +42,16 @@ export function CustomerComplaintsView() {
         if (!active) return;
         setComplaints(complaintData.complaints);
         setOrders(orderData.orders);
-        setOrderId(orderData.orders[0]?.id ?? '');
+        setOrderId(
+          orderData.orders.some((order) => order.id === requestedOrderId)
+            ? requestedOrderId
+            : (orderData.orders[0]?.id ?? ''),
+        );
       })
       .catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : 'Could not load support requests.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [fetchComplaints]);
+  }, [fetchComplaints, requestedOrderId]);
 
   const submit = async () => {
     setSubmitting(true); setError(null); setSubmitted(false);
